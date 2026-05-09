@@ -12,7 +12,6 @@ from funpay_tg.funpay.parsers import (
     parse_my_lots,
 )
 
-
 _APP_DATA = json.dumps(
     {
         "userId": 123,
