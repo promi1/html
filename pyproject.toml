@@ -1,0 +1,63 @@
+[project]
+name = "funpay-tg-bot"
+version = "0.1.0"
+description = "Personal Telegram bot for managing a FunPay seller account: chats, lot creation, AI-assisted descriptions, proxy support."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "promi1" }]
+
+dependencies = [
+    "aiogram>=3.5,<4",
+    "httpx[http2]>=0.27,<1",
+    "httpx-socks>=0.9,<1",
+    "lxml>=5.2,<6",
+    "beautifulsoup4>=4.12,<5",
+    "aiosqlite>=0.20,<1",
+    "pydantic>=2.7,<3",
+    "pydantic-settings>=2.3,<3",
+    "openai>=1.30,<2",
+    "Pillow>=10.3,<12",
+    "python-dotenv>=1.0,<2",
+    "tenacity>=8.3,<10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pytest>=8.2",
+    "pytest-asyncio>=0.23",
+    "types-beautifulsoup4",
+]
+
+[project.scripts]
+funpay-tg-bot = "funpay_tg.main:run"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W", "N", "C4", "ASYNC"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_ignores = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
