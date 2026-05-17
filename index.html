@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuyVPN — Premium VPN Client</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2128;
+            --bg-hover: #252d38;
+            --bg-active: #2a3342;
+            --border: #30363d;
+            --border-light: #3a424d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-yellow: #d29922;
+            --accent-purple: #bc8cff;
+            --accent-gradient: linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,.4);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,.5);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lock-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--accent-gradient);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 2px 8px rgba(88,166,255,.3);
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .header-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .header-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            transition: all .2s;
+        }
+
+        .header-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        /* ── Status Bar ── */
+        .status-bar {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .status-bar .info-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1.5px solid var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .status-bar .info-icon:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .traffic-bar-container {
+            flex: 1;
+            position: relative;
+        }
+
+        .traffic-bar {
+            height: 28px;
+            background: var(--bg-card);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+
+        .traffic-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            border-radius: 14px;
+            width: 0%;
+            transition: width 1.5s cubic-bezier(.4,0,.2,1);
+            position: relative;
+        }
+
+        .traffic-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.12) 50%, transparent 100%);
+            animation: shimmer 2.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .traffic-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            text-shadow: 0 1px 3px rgba(0,0,0,.5);
+            z-index: 1;
+        }
+
+        .expiry {
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .expiry-date {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .telegram-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            background: #2AABEE;
+            border-radius: 50%;
+            margin-left: 6px;
+            vertical-align: middle;
+            cursor: pointer;
+            transition: transform .2s;
+        }
+
+        .telegram-icon:hover {
+            transform: scale(1.15);
+        }
+
+        .telegram-icon svg {
+            width: 13px;
+            height: 13px;
+            fill: #fff;
+        }
+
+        /* ── Server List ── */
+        .server-list {
+            padding: 6px 0;
+        }
+
+        .server-item {
+            display: flex;
+            align-items: center;
+            padding: 13px 20px;
+            cursor: pointer;
+            transition: all .15s;
+            position: relative;
+        }
+
+        .server-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .server-item:active {
+            background: var(--bg-active);
+        }
+
+        .server-item.active {
+            background: var(--bg-active);
+        }
+
+        .server-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            bottom: 8px;
+            width: 3px;
+            background: var(--accent-gradient);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .server-item + .server-item {
+            border-top: 1px solid rgba(48,54,61,.5);
+        }
+
+        .flag {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .server-info {
+            flex: 1;
+            margin-left: 14px;
+        }
+
+        .server-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .server-protocol {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .protocol-tag {
+            display: inline-block;
+            padding: 1px 6px;
+            background: rgba(88,166,255,.1);
+            color: var(--accent-blue);
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .3px;
+        }
+
+        .ping-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-right: 12px;
+        }
+
+        .ping-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .ping-dot.green { background: var(--accent-green); box-shadow: 0 0 6px rgba(63,185,80,.4); }
+        .ping-dot.yellow { background: var(--accent-yellow); box-shadow: 0 0 6px rgba(210,153,34,.4); }
+        .ping-dot.red { background: #f85149; box-shadow: 0 0 6px rgba(248,81,73,.4); }
+
+        .ping-ms {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .chevron {
+            color: var(--text-muted);
+            font-size: 14px;
+            flex-shrink: 0;
+            transition: transform .2s;
+        }
+
+        .server-item:hover .chevron {
+            color: var(--text-secondary);
+            transform: translateX(2px);
+        }
+
+        /* ── Connection Button ── */
+        .connect-section {
+            padding: 16px 20px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .connect-btn {
+            width: 100%;
+            height: 48px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .3s;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: .3px;
+        }
+
+        .connect-btn.disconnected {
+            background: var(--accent-gradient);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(88,166,255,.3);
+        }
+
+        .connect-btn.disconnected:hover {
+            box-shadow: 0 6px 20px rgba(88,166,255,.45);
+            transform: translateY(-1px);
+        }
+
+        .connect-btn.connected {
+            background: rgba(63,185,80,.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(63,185,80,.3);
+        }
+
+        .connect-btn.connected:hover {
+            background: rgba(63,185,80,.25);
+        }
+
+        .connect-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,.1) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity .3s;
+        }
+
+        .connect-btn:hover::after {
+            opacity: 1;
+        }
+
+        /* ── Connection Status ── */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.off {
+            background: var(--text-muted);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%,100% { opacity: 1; }
+            50% { opacity: .4; }
+        }
+
+        .status-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .footer-link {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color .2s;
+        }
+
+        .footer-link:hover {
+            color: var(--accent-blue);
+        }
+
+        /* ── Scrollbar ── */
+        .server-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .server-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .server-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .server-list {
+            max-height: 520px;
+            overflow-y: auto;
+        }
+
+        /* ── Animations ── */
+        .server-item {
+            animation: fadeSlideIn .4s ease both;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .server-item:nth-child(1) { animation-delay: .05s; }
+        .server-item:nth-child(2) { animation-delay: .1s; }
+        .server-item:nth-child(3) { animation-delay: .15s; }
+        .server-item:nth-child(4) { animation-delay: .2s; }
+        .server-item:nth-child(5) { animation-delay: .25s; }
+        .server-item:nth-child(6) { animation-delay: .3s; }
+        .server-item:nth-child(7) { animation-delay: .35s; }
+        .server-item:nth-child(8) { animation-delay: .4s; }
+        .server-item:nth-child(9) { animation-delay: .45s; }
+        .server-item:nth-child(10) { animation-delay: .5s; }
+
+        /* ── Tooltip ── */
+        .tooltip {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            box-shadow: var(--shadow-md);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s;
+            top: 50px;
+            left: 20px;
+            right: 20px;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 460px) {
+            body { padding: 0; }
+            .app {
+                border-radius: 0;
+                border: none;
+                min-height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="lock-icon">🔒</div>
+            <div>
+                <div class="header-title">BuyVPN</div>
+                <div class="header-subtitle" id="dateTime"></div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="header-btn" title="Обновить" onclick="refreshServers()">↻</button>
+            <button class="header-btn" title="Копировать конфиг" onclick="copyConfig()">📋</button>
+            <button class="header-btn" title="Настройки">⚙</button>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="info-icon" onclick="toggleTooltip()" title="Информация">i</div>
+        <div class="traffic-bar-container">
+            <div class="traffic-bar">
+                <div class="traffic-fill" id="trafficFill"></div>
+                <div class="traffic-text">1256GB / ∞</div>
+            </div>
+            <div class="tooltip" id="tooltip">
+                Использовано 1256 ГБ трафика. Безлимитный план.<br>
+                Автообновление включено.
+            </div>
+        </div>
+        <div class="expiry">
+            <span class="expiry-date" id="expiryDate"></span>
+            <span class="telegram-icon" title="Telegram">
+                <svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            </span>
+        </div>
+    </div>
+
+    <!-- Server List -->
+    <div class="server-list" id="serverList"></div>
+
+    <!-- Connection Section -->
+    <div class="connect-section">
+        <div class="connection-status">
+            <div class="status-dot off" id="statusDot"></div>
+            <span class="status-text" id="statusText">Отключено</span>
+        </div>
+        <button class="connect-btn disconnected" id="connectBtn" onclick="toggleConnection()">
+            Подключиться
+        </button>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <a href="#" class="footer-link">Поддержка</a>
+        <a href="#" class="footer-link">Тарифы</a>
+        <a href="#" class="footer-link">FAQ</a>
+    </div>
+</div>
+
+<script>
+const servers = [
+    { name: 'Auto',           flag: '🌐', country: 'auto',   protocols: ['VLESS','JSON'], ping: null },
+    { name: 'Finland',        flag: '🇫🇮', country: 'fi',     protocols: ['VLESS','JSON'], ping: 32 },
+    { name: 'Germany',        flag: '🇩🇪', country: 'de',     protocols: ['VLESS','JSON'], ping: 18 },
+    { name: 'Netherlands',    flag: '🇳🇱', country: 'nl',     protocols: ['VLESS','JSON'], ping: 24 },
+    { name: 'Latvia',         flag: '🇱🇻', country: 'lv',     protocols: ['VLESS','JSON'], ping: 41 },
+    { name: 'Sweden',         flag: '🇸🇪', country: 'se',     protocols: ['VLESS','JSON'], ping: 28 },
+    { name: 'United States',  flag: '🇺🇸', country: 'us',     protocols: ['VLESS','JSON'], ping: 112 },
+    { name: 'United Kingdom', flag: '🇬🇧', country: 'gb',     protocols: ['VLESS','JSON'], ping: 35 },
+    { name: 'France',         flag: '🇫🇷', country: 'fr',     protocols: ['VLESS','JSON'], ping: 22 },
+    { name: 'Poland',         flag: '🇵🇱', country: 'pl',     protocols: ['VLESS','JSON'], ping: 15 },
+];
+
+let selectedServer = 0;
+let isConnected = false;
+
+function getPingClass(ping) {
+    if (ping === null) return 'green';
+    if (ping < 50) return 'green';
+    if (ping < 100) return 'yellow';
+    return 'red';
+}
+
+function renderServers() {
+    const list = document.getElementById('serverList');
+    list.innerHTML = servers.map((s, i) => `
+        <div class="server-item ${i === selectedServer ? 'active' : ''}" onclick="selectServer(${i})">
+            <div class="flag">${s.flag}</div>
+            <div class="server-info">
+                <div class="server-name">${s.name}</div>
+                <div class="server-protocol">
+                    ${s.protocols.map(p => `<span class="protocol-tag">${p}</span>`).join('')}
+                </div>
+            </div>
+            ${s.ping !== null ? `
+                <div class="ping-indicator">
+                    <div class="ping-dot ${getPingClass(s.ping)}"></div>
+                    <span class="ping-ms">${s.ping}ms</span>
+                </div>
+            ` : `
+                <div class="ping-indicator">
+                    <div class="ping-dot green"></div>
+                    <span class="ping-ms">auto</span>
+                </div>
+            `}
+            <div class="chevron">›</div>
+        </div>
+    `).join('');
+}
+
+function selectServer(index) {
+    selectedServer = index;
+    renderServers();
+}
+
+function toggleConnection() {
+    const btn = document.getElementById('connectBtn');
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+
+    isConnected = !isConnected;
+
+    if (isConnected) {
+        btn.className = 'connect-btn connected';
+        btn.textContent = 'Отключиться';
+        dot.className = 'status-dot';
+        text.textContent = `Подключено — ${servers[selectedServer].name}`;
+    } else {
+        btn.className = 'connect-btn disconnected';
+        btn.textContent = 'Подключиться';
+        dot.className = 'status-dot off';
+        text.textContent = 'Отключено';
+    }
+}
+
+function refreshServers() {
+    servers.forEach(s => {
+        if (s.ping !== null) {
+            s.ping = Math.max(5, s.ping + Math.floor(Math.random() * 21) - 10);
+        }
+    });
+    renderServers();
+}
+
+function copyConfig() {
+    const s = servers[selectedServer];
+    const config = `Server: ${s.name}\nProtocol: ${s.protocols.join(', ')}\nPing: ${s.ping ?? 'auto'}ms`;
+    navigator.clipboard.writeText(config).catch(() => {});
+}
+
+function toggleTooltip() {
+    document.getElementById('tooltip').classList.toggle('show');
+}
+
+function updateDateTime() {
+    const now = new Date();
+    const d = now.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const t = now.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+    document.getElementById('dateTime').textContent = `${d} ${t} | Автообновление — 1ч.`;
+}
+
+function setExpiry() {
+    const exp = new Date();
+    exp.setDate(exp.getDate() + 9);
+    document.getElementById('expiryDate').textContent =
+        `Истекает: ${exp.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' })}`;
+}
+
+document.addEventListener('click', (e) => {
+    const tooltip = document.getElementById('tooltip');
+    if (!e.target.closest('.info-icon') && !e.target.closest('.tooltip')) {
+        tooltip.classList.remove('show');
+    }
+});
+
+// Init
+updateDateTime();
+setInterval(updateDateTime, 60000);
+setExpiry();
+renderServers();
+
+// Animate traffic bar
+requestAnimationFrame(() => {
+    document.getElementById('trafficFill').style.width = '65%';
+});
+</script>
+
+</body>
+</html>
