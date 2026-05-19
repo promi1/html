@@ -60,7 +60,7 @@ async def sync_traffic():
         if not s["xray_uuid"]:
             continue
         try:
-            ssh_key = s.get("ssh_key", "") or ""
+            ssh_key = (dict(s).get("ssh_key", "") or "") if not isinstance(s, dict) else (s.get("ssh_key", "") or "")
             email = f"user-{s['xray_uuid'][:8]}"
             stats = await query_xray_stats(
                 s["ip"], s["ssh_user"], s["ssh_password"],
