@@ -1,4 +1,5 @@
 import logging
+import os
 from aiogram import Router, F, Bot
 from aiogram.filters import Command
 from aiogram.types import (Message, CallbackQuery, InlineKeyboardMarkup,
@@ -42,32 +43,53 @@ class AddBalanceState(StatesGroup):
     waiting_amount = State()
 
 
+def _admin_panel_url() -> str:
+    base = config.WEBHOOK_BASE_URL
+    if base:
+        return f"{base.rstrip('/')}/admin/"
+    return ""
+
+
 def admin_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
+    buttons = [
         [InlineKeyboardButton(text="Статистика", callback_data="adm_stats")],
         [InlineKeyboardButton(text="Серверы", callback_data="adm_servers")],
         [InlineKeyboardButton(text="Пользователи", callback_data="adm_users")],
         [InlineKeyboardButton(text="Подписки", callback_data="adm_subs")],
         [InlineKeyboardButton(text="Рассылка", callback_data="adm_broadcast")],
         [InlineKeyboardButton(text="Начислить баланс", callback_data="adm_add_balance")],
-    ])
+        [InlineKeyboardButton(text="Пароль админки", callback_data="adm_password")],
+    ]
+    url = _admin_panel_url()
+    if url:
+        buttons.append([InlineKeyboardButton(text="Открыть веб-панель", url=url)])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+class SetPasswordState(StatesGroup):
+    waiting_password = State()
 
 
 @router.message(Command("admin"))
 async def cmd_admin(message: Message):
     if not config.is_admin(message.from_user.id):
-        await message.answer(f"{CROSS} Доступ запрещён.")
+        await message.answer("Доступ запрещён.")
         return
 
     users = await get_user_count()
     subs = await get_active_sub_count()
     revenue = await get_total_revenue()
 
+    url = _admin_panel_url()
+    panel_line = f"\nВеб-панель: {url}" if url else ""
+    pwd_line = f"\nПароль: <tg-spoiler>{config.ADMIN_PASSWORD}</tg-spoiler>"
+
     await message.answer(
         f"<b>Панель администратора</b>\n\n"
         f"Пользователей: <b>{users}</b>\n"
         f"Активных подписок: <b>{subs}</b>\n"
-        f"Доход: <b>{revenue:.0f} \u20bd</b>",
+        f"Доход: <b>{revenue:.0f} \u20bd</b>"
+        f"{panel_line}{pwd_line}",
         parse_mode="HTML",
         reply_markup=admin_kb()
     )
@@ -654,3 +676,72 @@ async def add_balance_amount(message: Message, state: FSMContext, bot: Bot):
         )
     except Exception:
         pass
+
+
+# ——— Admin password management ———
+
+@router.callback_query(F.data == "adm_password")
+async def adm_password_show(call: CallbackQuery, state: FSMContext):
+    if not config.is_admin(call.from_user.id):
+        return
+    url = _admin_panel_url()
+    panel_line = f"\nВеб-панель: {url}" if url else ""
+    await call.message.edit_text(
+        f"<b>Пароль админ-панели</b>\n\n"
+        f"Текущий пароль: <tg-spoiler>{config.ADMIN_PASSWORD}</tg-spoiler>"
+        f"{panel_line}\n\n"
+        f"Отправьте новый пароль или нажмите Назад.",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="Назад", callback_data="adm_back")]
+        ])
+    )
+    await state.set_state(SetPasswordState.waiting_password)
+
+
+@router.message(SetPasswordState.waiting_password)
+async def set_admin_password(message: Message, state: FSMContext):
+    if not config.is_admin(message.from_user.id):
+        return
+    new_pwd = message.text.strip()
+    if len(new_pwd) < 4:
+        await message.answer("Пароль слишком короткий (мин. 4 символа). Попробуйте ещё раз.")
+        return
+
+    config.ADMIN_PASSWORD = new_pwd
+    await state.clear()
+
+    # Persist to .env file
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+    try:
+        lines = []
+        found = False
+        if os.path.exists(env_path):
+            with open(env_path, "r") as f:
+                for line in f:
+                    if line.startswith("ADMIN_PASSWORD="):
+                        lines.append(f"ADMIN_PASSWORD={new_pwd}\n")
+                        found = True
+                    else:
+                        lines.append(line)
+        if not found:
+            lines.append(f"ADMIN_PASSWORD={new_pwd}\n")
+        with open(env_path, "w") as f:
+            f.writelines(lines)
+    except Exception as e:
+        logger.warning(f"Could not update .env: {e}")
+
+    # Try to delete password message for security
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
+    await message.answer(
+        f"Пароль изменён.\n\n"
+        f"Новый пароль: <tg-spoiler>{new_pwd}</tg-spoiler>",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="Назад", callback_data="adm_back")]
+        ])
+    )

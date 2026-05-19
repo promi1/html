@@ -401,6 +401,10 @@ def create_web_app() -> web.Application:
 
     # Help / tutorial pages (static files)
     if os.path.exists(HELP_DIR):
+        async def help_index(request):
+            raise web.HTTPFound("/help/index.html")
+        app.router.add_get("/help/", help_index)
+        app.router.add_get("/help", help_index)
         app.router.add_static("/help", HELP_DIR, name="help")
     if os.path.exists(LEGAL_DIR):
         app.router.add_static("/legal", LEGAL_DIR, name="legal")

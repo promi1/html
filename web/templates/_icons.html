@@ -51,5 +51,5 @@
   "circle-dot": '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>',
   "ban": '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'
 } %}
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="{{ size }}" height="{{ size }}" class="lucide">{{ icons[name]|default('<circle cx="12" cy="12" r="10"/>') }}</svg>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="{{ size }}" height="{{ size }}" class="lucide">{{ (icons[name]|default('<circle cx="12" cy="12" r="10"/>'))|safe }}</svg>
 {% endmacro %}
