@@ -266,7 +266,7 @@ tbody tr:hover td { background: var(--surface-2); }
 /* ===== TABLE CONTAINER ===== */
 .table-container {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-lg); overflow: hidden;
+    border-radius: var(--radius-lg); overflow: visible;
 }
 
 /* ===== CARD ===== */
