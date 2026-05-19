@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% set active = "servers" %}
+
+{% block title %}Серверы — VPN Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🌐 Серверы</h1>
+    <a href="/admin/servers/add" class="btn btn-primary">➕ Добавить сервер</a>
+</div>
+
+{% if servers %}
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Страна</th>
+                <th>IP</th>
+                <th>Тип</th>
+                <th>Xray</th>
+                <th>Статус</th>
+                <th>Скорость</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in servers %}
+            <tr>
+                <td>{{ s.id }}</td>
+                <td>{{ s.flag }} {{ s.display_name or s.country_name or '—' }}</td>
+                <td><code>{{ s.ip }}</code></td>
+                <td>
+                    {% if s.is_relay %}
+                    <span class="badge badge-relay">RELAY</span>
+                    {% else %}
+                    <span class="badge badge-vpn">VPN</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if s.xray_configured %}
+                    <span class="badge badge-ok">✅ OK</span>
+                    {% else %}
+                    <span class="badge badge-err">❌ Нет</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if s.is_active %}
+                    <span class="badge badge-ok">🟢 Активен</span>
+                    {% else %}
+                    <span class="badge badge-err">🔴 Выкл</span>
+                    {% endif %}
+                </td>
+                <td>{{ s.speed }}</td>
+                <td class="actions">
+                    {% if s.is_active %}
+                    <a href="/admin/servers/toggle/{{ s.id }}/0" class="btn btn-sm btn-warning" title="Отключить">⏸</a>
+                    {% else %}
+                    <a href="/admin/servers/toggle/{{ s.id }}/1" class="btn btn-sm btn-success" title="Включить">▶️</a>
+                    {% endif %}
+                    {% if not s.xray_configured and not s.is_relay %}
+                    <a href="/admin/servers/reinstall/{{ s.id }}" class="btn btn-sm btn-primary" title="Установить Xray">🚀</a>
+                    {% endif %}
+                    <a href="/admin/servers/delete/{{ s.id }}" class="btn btn-sm btn-danger" title="Удалить" onclick="return confirm('Удалить сервер {{ s.ip }}?')">🗑️</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🌐</div>
+    <h3>Нет серверов</h3>
+    <p>Добавьте первый VPN сервер</p>
+    <a href="/admin/servers/add" class="btn btn-primary">➕ Добавить сервер</a>
+</div>
+{% endif %}
+{% endblock %}

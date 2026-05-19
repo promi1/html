@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+
+{% block title %}Дашборд — VPN Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📊 Дашборд</h1>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ users }}</div>
+            <div class="stat-label">Пользователей</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🔑</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ subs }}</div>
+            <div class="stat-label">Активных подписок</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ "%.0f"|format(revenue) }} ₽</div>
+            <div class="stat-label">Общий доход</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🌐</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ active_servers }} / {{ servers }}</div>
+            <div class="stat-label">Серверов активно</div>
+        </div>
+    </div>
+</div>
+
+<div class="info-cards">
+    <div class="info-card">
+        <h3>💎 Подписка</h3>
+        <p>Цена: <strong>{{ price }} ₽ / месяц</strong></p>
+        <p>Протокол: <strong>VLESS + XTLS-Reality</strong></p>
+    </div>
+    <div class="info-card">
+        <h3>🚀 Быстрые действия</h3>
+        <a href="/admin/servers/add" class="btn btn-primary">➕ Добавить сервер</a>
+        <a href="/admin/servers" class="btn btn-secondary">🌐 Управление серверами</a>
+    </div>
+</div>
+{% endblock %}

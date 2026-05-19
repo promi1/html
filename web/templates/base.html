@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VPN Admin{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    {% block nav %}
+    <nav class="sidebar">
+        <div class="logo">
+            <span class="logo-icon">🛡️</span>
+            <span class="logo-text">VPN Panel</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/admin/dashboard" class="{% if active == 'dashboard' %}active{% endif %}">📊 Дашборд</a></li>
+            <li><a href="/admin/servers" class="{% if active == 'servers' %}active{% endif %}">🌐 Серверы</a></li>
+            <li><a href="/admin/users" class="{% if active == 'users' %}active{% endif %}">👥 Пользователи</a></li>
+            <li><a href="/admin/settings" class="{% if active == 'settings' %}active{% endif %}">⚙️ Настройки</a></li>
+            <li><a href="/admin/logout" class="logout">🚪 Выход</a></li>
+        </ul>
+    </nav>
+    {% endblock %}
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
