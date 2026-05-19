@@ -16,7 +16,8 @@ from database import (get_all_servers, get_server, get_all_users, get_user_count
                        get_all_users_with_payments, get_all_traffic, ensure_traffic_table,
                        get_users_registered_since, get_subs_started_since, get_revenue_since)
 from services.country import detect_country
-from services.xray_manager import setup_server_full, setup_relay, check_server_alive
+from services.xray_manager import (setup_server_full, setup_relay, check_server_alive,
+                                    _setup_logs, cleanup_setup_logs)
 from emoji import flag
 
 logger = logging.getLogger(__name__)
@@ -140,8 +141,9 @@ async def add_server_page(request):
 
 
 async def add_server_post(request):
+    """Handle add server form — returns JSON for AJAX requests."""
     if not check_auth(request):
-        raise web.HTTPFound("/admin/login")
+        return web.json_response({"error": "unauthorized"}, status=401)
     data = await request.post()
     ip = data.get("ip", "").strip()
     ssh_user = data.get("ssh_user", "root").strip() or "root"
@@ -154,13 +156,11 @@ async def add_server_post(request):
     xray_port = int(data.get("xray_port", "443") or "443")
 
     if not ip or (not ssh_password and not ssh_key):
-        servers = await get_all_servers()
-        vpn_servers = [s for s in servers if not s["is_relay"] and s["xray_uuid"]]
-        return aiohttp_jinja2.render_template("add_server.html", request, {
-            "vpn_servers": vpn_servers,
-            "error": "IP и пароль (или SSH ключ) обязательны",
-            "success": ""
-        })
+        return web.json_response({"error": "IP и пароль (или SSH ключ) обязательны"})
+
+    # Generate setup_id for log streaming
+    import secrets as _sec
+    setup_id = _sec.token_hex(8)
 
     # Detect country
     geo = await detect_country(ip)
@@ -185,40 +185,85 @@ async def add_server_post(request):
                                         xray_port, ssh_port,
                                         ssh_key=ssh_key)
                 if not ok:
-                    servers = await get_all_servers()
-                    vpn_servers = [s for s in servers if not s["is_relay"] and s["xray_uuid"]]
-                    return aiohttp_jinja2.render_template("add_server.html", request, {
-                        "vpn_servers": vpn_servers,
-                        "error": "Relay добавлен в БД, но настройка не удалась. Проверьте SSH.",
-                        "success": ""
-                    })
-        raise web.HTTPFound("/admin/servers")
+                    return web.json_response({"error": "Relay added but setup failed"})
+        return web.json_response({"ok": True, "redirect": "/admin/servers"})
     else:
         server_id = await add_server(
             ip=ip, ssh_user=ssh_user, ssh_password=ssh_password, ssh_port=ssh_port,
             country_code=cc, country_name=country, city=city,
             display_name=display_name
         )
-        # Auto-setup Xray
-        result = await setup_server_full(ip, ssh_user, ssh_password, ssh_port, sni, xray_port, ssh_key=ssh_key)
-        if "error" in result:
-            servers = await get_all_servers()
-            vpn_servers = [s for s in servers if not s["is_relay"] and s["xray_uuid"]]
-            return aiohttp_jinja2.render_template("add_server.html", request, {
-                "vpn_servers": vpn_servers,
-                "error": f"Сервер добавлен, но Xray не установлен: {result['error']}",
-                "success": ""
-            })
-        await update_server_xray(
-            server_id,
-            uuid_val=result["uuid"],
-            private_key=result["private_key"],
-            public_key=result["public_key"],
-            short_id=result["short_id"],
-            xray_port=result["port"],
-            sni=result["sni"]
-        )
-        raise web.HTTPFound("/admin/servers")
+
+        async def run_setup():
+            result = await setup_server_full(
+                ip, ssh_user, ssh_password, ssh_port, sni, xray_port,
+                ssh_key=ssh_key, setup_id=setup_id
+            )
+            # Store result in logs
+            if setup_id not in _setup_logs:
+                _setup_logs[setup_id] = []
+            if "error" in result:
+                import time
+                _setup_logs[setup_id].append({
+                    "ts": time.time(), "msg": f"FAILED: {result['error']}",
+                    "level": "error", "done": True, "success": False
+                })
+            else:
+                await update_server_xray(
+                    server_id,
+                    uuid_val=result["uuid"],
+                    private_key=result["private_key"],
+                    public_key=result["public_key"],
+                    short_id=result["short_id"],
+                    xray_port=result["port"],
+                    sni=result["sni"]
+                )
+                import time
+                _setup_logs[setup_id].append({
+                    "ts": time.time(), "msg": "Server ready!",
+                    "level": "success", "done": True, "success": True
+                })
+
+        # Run setup in background
+        asyncio.ensure_future(run_setup())
+        return web.json_response({"ok": True, "setup_id": setup_id, "country": display_name})
+
+
+async def api_setup_logs(request):
+    """SSE endpoint for streaming setup logs."""
+    if not check_auth(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    setup_id = request.match_info["setup_id"]
+    resp = web.StreamResponse(
+        status=200,
+        reason="OK",
+        headers={
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+    await resp.prepare(request)
+    seen = 0.0
+    max_wait = 300  # 5 min max
+    elapsed = 0
+    try:
+        while elapsed < max_wait:
+            logs = _setup_logs.get(setup_id, [])
+            new_logs = [e for e in logs if e["ts"] > seen]
+            for entry in new_logs:
+                seen = entry["ts"]
+                payload = json.dumps(entry)
+                await resp.write(f"data: {payload}\n\n".encode())
+                if entry.get("done"):
+                    cleanup_setup_logs(setup_id)
+                    return resp
+            await asyncio.sleep(0.5)
+            elapsed += 0.5
+    except (asyncio.CancelledError, ConnectionResetError):
+        pass
+    return resp
 
 
 async def delete_server_handler(request):
@@ -466,6 +511,7 @@ def create_web_app() -> web.Application:
     app.router.add_get("/admin/api/revenue", api_revenue)
     app.router.add_get("/admin/api/subs", api_subs)
     app.router.add_get("/admin/api/servers/check/{id}", api_check_server)
+    app.router.add_get("/admin/api/setup-logs/{setup_id}", api_setup_logs)
 
     # Static files
     if os.path.exists(STATIC_DIR):

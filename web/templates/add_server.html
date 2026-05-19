@@ -25,8 +25,9 @@
 <div class="alert alert-success">{{ icon('check', 16) }} {{ success }}</div>
 {% endif %}
 
+<div class="add-server-layout">
 <div class="form-card">
-    <form method="post" action="/admin/servers/add">
+    <form id="addServerForm" method="post" action="/admin/servers/add">
         <div class="form-section">
             <div class="form-section-header">
                 {{ icon('terminal', 18) }}
@@ -103,12 +104,24 @@
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" id="submitBtn">
                 {{ icon('plus', 16) }} Add and configure
             </button>
             <span class="form-hint">Country will be detected automatically. Xray will be installed on the server (1-3 min).</span>
         </div>
     </form>
+</div>
+
+<div class="console-panel" id="consolePanel">
+    <div class="console-header">
+        {{ icon('terminal', 16) }}
+        <span>Setup Console</span>
+        <span class="console-status" id="consoleStatus">Waiting...</span>
+    </div>
+    <div class="console-body" id="consoleBody">
+        <div class="console-line console-dim">Ready. Fill in the form and click "Add and configure" to start.</div>
+    </div>
+</div>
 </div>
 
 {% endblock %}
@@ -119,6 +132,102 @@ function toggleRelay() {
     var cb = document.getElementById('is_relay');
     var target = document.getElementById('relay_target_group');
     target.classList.toggle('visible', cb.checked);
+}
+
+document.getElementById('addServerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var form = this;
+    var btn = document.getElementById('submitBtn');
+    var body = document.getElementById('consoleBody');
+    var status = document.getElementById('consoleStatus');
+    var panel = document.getElementById('consolePanel');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Setting up...';
+    panel.classList.add('active');
+    body.innerHTML = '';
+    addLine('Submitting server data...', 'info');
+    status.textContent = 'Connecting...';
+    status.className = 'console-status status-working';
+
+    var formData = new FormData(form);
+
+    fetch('/admin/servers/add', {method: 'POST', body: formData})
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) {
+            addLine('ERROR: ' + data.error, 'error');
+            status.textContent = 'Failed';
+            status.className = 'console-status status-error';
+            btn.disabled = false;
+            btn.innerHTML = '+ Add and configure';
+            return;
+        }
+        if (data.redirect) {
+            addLine('Done! Redirecting...', 'success');
+            status.textContent = 'Done';
+            status.className = 'console-status status-ok';
+            setTimeout(function() { window.location.href = data.redirect; }, 1000);
+            return;
+        }
+        if (data.setup_id) {
+            addLine('Server added (' + (data.country || 'detecting...') + ')', 'info');
+            addLine('Starting Xray setup...', 'info');
+            streamLogs(data.setup_id, btn, status);
+        }
+    })
+    .catch(function(err) {
+        addLine('Network error: ' + err, 'error');
+        status.textContent = 'Error';
+        status.className = 'console-status status-error';
+        btn.disabled = false;
+        btn.innerHTML = '+ Add and configure';
+    });
+});
+
+function streamLogs(setupId, btn, status) {
+    var es = new EventSource('/admin/api/setup-logs/' + setupId);
+    es.onmessage = function(ev) {
+        var d = JSON.parse(ev.data);
+        addLine(d.msg, d.level || 'info');
+        if (d.done) {
+            es.close();
+            if (d.success) {
+                status.textContent = 'Success';
+                status.className = 'console-status status-ok';
+                addLine('Redirecting to servers...', 'info');
+                setTimeout(function() { window.location.href = '/admin/servers'; }, 1500);
+            } else {
+                status.textContent = 'Failed';
+                status.className = 'console-status status-error';
+                btn.disabled = false;
+                btn.innerHTML = '+ Add and configure';
+            }
+        }
+    };
+    es.onerror = function() {
+        es.close();
+        addLine('Connection to server lost', 'warning');
+        status.textContent = 'Disconnected';
+        status.className = 'console-status status-error';
+        btn.disabled = false;
+        btn.innerHTML = '+ Add and configure';
+    };
+}
+
+function addLine(text, level) {
+    var body = document.getElementById('consoleBody');
+    var ts = new Date().toLocaleTimeString('en-GB', {hour12: false});
+    var div = document.createElement('div');
+    div.className = 'console-line console-' + (level || 'info');
+    var prefix = '';
+    if (level === 'error') prefix = '\u2717 ';
+    else if (level === 'success') prefix = '\u2713 ';
+    else if (level === 'warning') prefix = '! ';
+    else prefix = '\u203a ';
+    div.innerHTML = '<span class="console-ts">' + ts + '</span> ' + prefix + text;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
 }
 </script>
 {% endblock %}
