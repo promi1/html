@@ -174,7 +174,8 @@ async def add_server_post(request):
             ip=ip, ssh_user=ssh_user, ssh_password=ssh_password, ssh_port=ssh_port,
             country_code=cc, country_name=country, city=city,
             display_name=f"WHITELIST {display_name}",
-            is_relay=1, relay_target_id=relay_target if relay_target else None
+            is_relay=1, relay_target_id=relay_target if relay_target else None,
+            ssh_key=ssh_key
         )
         if relay_target:
             from database import get_server as gs
@@ -191,7 +192,7 @@ async def add_server_post(request):
         server_id = await add_server(
             ip=ip, ssh_user=ssh_user, ssh_password=ssh_password, ssh_port=ssh_port,
             country_code=cc, country_name=country, city=city,
-            display_name=display_name
+            display_name=display_name, ssh_key=ssh_key
         )
 
         async def run_setup():

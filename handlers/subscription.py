@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 
 from database import (get_user, deduct_balance, create_subscription,
                        get_active_subscription, get_active_vpn_servers,
-                       get_relay_servers, renew_subscription)
+                       get_relay_servers, renew_subscription,
+                       get_traffic, ensure_traffic_table)
 from config import config
 from emoji import (BUTTERFLY, CHECK, CROSS, MONEY, ROCKET, ARROW_UP,
                    WARNING, BELL, STOP, INFO, STATS, KEY, GLOBE, SHIELD,
@@ -200,10 +201,22 @@ async def my_keys(call: CallbackQuery):
 
     servers_text = "\n".join(server_lines) if server_lines else "  \u26a0\ufe0f Нет серверов"
 
+    from handlers.profile import fmt_bytes
+    await ensure_traffic_table()
+    traffic = await get_traffic(call.from_user.id)
+    up = traffic.get("upload", 0)
+    down = traffic.get("download", 0)
+    total = up + down
+    traffic_text = (
+        f"\n<b>Трафик:</b> {fmt_bytes(total)}\n"
+        f"  Upload: {fmt_bytes(up)} / Download: {fmt_bytes(down)}\n"
+    )
+
     await call.message.edit_text(
         f"<b>Ваша подписка</b>\n\n"
         f"<b>Статус:</b> Активна\n"
-        f"<b>До:</b> {expires.strftime('%d.%m.%Y %H:%M')} UTC ({days_left} дн.)\n\n"
+        f"<b>До:</b> {expires.strftime('%d.%m.%Y %H:%M')} UTC ({days_left} дн.)\n"
+        f"{traffic_text}\n"
         f"<b>Серверы в подписке:</b>\n"
         f"{servers_text}\n\n"
         f"<b>Ссылка подписки:</b>\n"

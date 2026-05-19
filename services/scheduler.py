@@ -60,13 +60,13 @@ async def sync_traffic():
         if not s["xray_uuid"]:
             continue
         try:
+            ssh_key = s.get("ssh_key", "") or ""
             email = f"user-{s['xray_uuid'][:8]}"
             stats = await query_xray_stats(
                 s["ip"], s["ssh_user"], s["ssh_password"],
-                s["ssh_port"], ssh_key="", email=email
+                s["ssh_port"], ssh_key=ssh_key, email=email
             )
             if stats and (stats.get("uplink", 0) > 0 or stats.get("downlink", 0) > 0):
-                from database import get_all_subscriptions
                 subs = await get_all_subscriptions()
                 active_users = [sub["user_id"] for sub in subs if sub["is_active"]]
                 for uid in active_users:

@@ -3,9 +3,20 @@ from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime
 
-from database import get_user, get_active_subscription
+from database import get_user, get_active_subscription, get_traffic, ensure_traffic_table
 from config import config
 from emoji import CHECK, CROSS, MONEY, STATS, SETTINGS, ARROW_UP, STOP, KEY, ROCKET
+
+
+def fmt_bytes(b: int) -> str:
+    if b < 1024:
+        return f"{b} B"
+    elif b < 1024 * 1024:
+        return f"{b / 1024:.1f} KB"
+    elif b < 1024 * 1024 * 1024:
+        return f"{b / (1024*1024):.1f} MB"
+    else:
+        return f"{b / (1024*1024*1024):.2f} GB"
 
 router = Router()
 
@@ -26,6 +37,14 @@ async def profile_text(user_id: int) -> str:
         days_left = (expires - datetime.utcnow()).days
         lines.append(f"\n<b>VPN:</b> Активен")
         lines.append(f"До: {expires.strftime('%d.%m.%Y')} ({days_left} дн.)")
+        await ensure_traffic_table()
+        traffic = await get_traffic(user_id)
+        up = traffic.get("upload", 0)
+        down = traffic.get("download", 0)
+        total = up + down
+        lines.append(f"\nТрафик: {fmt_bytes(total)}")
+        lines.append(f"  Upload: {fmt_bytes(up)}")
+        lines.append(f"  Download: {fmt_bytes(down)}")
     else:
         lines.append(f"\n<b>VPN:</b> Неактивен")
 

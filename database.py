@@ -25,6 +25,7 @@ async def init_db():
                 ip TEXT NOT NULL,
                 ssh_user TEXT DEFAULT 'root',
                 ssh_password TEXT,
+                ssh_key TEXT DEFAULT '',
                 ssh_port INTEGER DEFAULT 22,
                 country_code TEXT DEFAULT '',
                 country_name TEXT DEFAULT '',
@@ -152,14 +153,15 @@ async def unban_user(user_id: int):
 async def add_server(ip: str, ssh_user: str, ssh_password: str, ssh_port: int = 22,
                      country_code: str = "", country_name: str = "", city: str = "",
                      display_name: str = "", speed: str = "10 Gbps",
-                     is_relay: int = 0, relay_target_id: int = None) -> int:
+                     is_relay: int = 0, relay_target_id: int = None,
+                     ssh_key: str = "") -> int:
     async with aiosqlite.connect(DB_PATH) as db:
         cur = await db.execute("""
-            INSERT INTO servers (ip, ssh_user, ssh_password, ssh_port,
+            INSERT INTO servers (ip, ssh_user, ssh_password, ssh_key, ssh_port,
                                  country_code, country_name, city, display_name, speed,
                                  is_relay, relay_target_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (ip, ssh_user, ssh_password, ssh_port,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (ip, ssh_user, ssh_password, ssh_key, ssh_port,
               country_code, country_name, city, display_name, speed,
               is_relay, relay_target_id))
         await db.commit()
