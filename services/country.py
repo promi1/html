@@ -8,8 +8,8 @@ async def detect_country(ip: str) -> dict:
     """Detect country/city by IP using free APIs with fallback."""
     empty = {"country_code": "", "country_name": "", "city": "", "isp": "", "org": ""}
     apis = [
-        (f"https://api.2ip.ua/geo.json?ip={ip}", _parse_2ip),
         (f"http://ip-api.com/json/{ip}?lang=ru", _parse_ip_api),
+        (f"https://api.2ip.ua/geo.json?ip={ip}", _parse_2ip),
         (f"https://ipwho.is/{ip}", _parse_ipwhois),
     ]
     try:

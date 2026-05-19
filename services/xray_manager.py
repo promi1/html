@@ -392,38 +392,36 @@ async def query_xray_stats(ip: str, user: str, password: str, ssh_port: int = 22
                             ssh_key: str = "", email: str = "") -> dict:
     """Query Xray stats API for traffic data via SSH.
     Returns {"uplink": bytes, "downlink": bytes} or empty dict on failure.
+    Uses -reset flag so counters reset after each read (incremental collection).
+    Queries vless-in inbound stats (total VPN traffic through the server).
     """
-    if email:
-        cmd = (
-            f"/usr/local/bin/xray api statsquery --server=127.0.0.1:10085 "
-            f"-pattern 'user>>>{email}>>>traffic' 2>/dev/null && echo STATS_OK"
-        )
-    else:
-        cmd = (
-            "/usr/local/bin/xray api statsquery --server=127.0.0.1:10085 "
-            "2>/dev/null && echo STATS_OK"
-        )
+    cmd = (
+        "/usr/local/bin/xray api statsquery --server=127.0.0.1:10085 -reset "
+        "2>/dev/null && echo STATS_OK"
+    )
     stdout, stderr, rc = await run_ssh_command(ip, user, password, cmd, ssh_port, timeout=15, ssh_key=ssh_key)
     if "STATS_OK" not in stdout:
+        logger.warning(f"Stats query failed for {ip}: rc={rc}, stderr={stderr[:200]}")
         return {}
 
     result = {"uplink": 0, "downlink": 0}
     try:
-        for line in stdout.split("\n"):
-            line = line.strip()
-            if "uplink" in line.lower() and "value" not in line.lower():
-                continue
-            if '"value"' in line or "'value'" in line:
-                pass
-        import re
-        blocks = re.findall(r'"name":\s*"([^"]+)".*?"value":\s*"?(\d+)"?', stdout, re.DOTALL)
-        for name, value in blocks:
-            if "uplink" in name:
-                result["uplink"] += int(value)
-            elif "downlink" in name:
-                result["downlink"] += int(value)
+        json_str = stdout.split("STATS_OK")[0].strip()
+        if json_str:
+            data = json.loads(json_str)
+            for entry in data.get("stat", []):
+                name = entry.get("name", "")
+                value = int(entry.get("value", 0))
+                if value <= 0:
+                    continue
+                if "vless-in" not in name and "user>>>" not in name:
+                    continue
+                if "uplink" in name:
+                    result["uplink"] += value
+                elif "downlink" in name:
+                    result["downlink"] += value
     except Exception as e:
-        logger.warning(f"Failed to parse Xray stats: {e}")
+        logger.warning(f"Failed to parse Xray stats from {ip}: {e}")
     return result
 
 
