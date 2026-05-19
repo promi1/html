@@ -52,12 +52,6 @@ def _admin_panel_url() -> str:
 
 def admin_kb() -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton(text="Статистика", callback_data="adm_stats")],
-        [InlineKeyboardButton(text="Серверы", callback_data="adm_servers")],
-        [InlineKeyboardButton(text="Пользователи", callback_data="adm_users")],
-        [InlineKeyboardButton(text="Подписки", callback_data="adm_subs")],
-        [InlineKeyboardButton(text="Рассылка", callback_data="adm_broadcast")],
-        [InlineKeyboardButton(text="Начислить баланс", callback_data="adm_add_balance")],
         [InlineKeyboardButton(text="Пароль админки", callback_data="adm_password")],
     ]
     url = _admin_panel_url()

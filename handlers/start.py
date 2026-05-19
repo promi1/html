@@ -20,13 +20,6 @@ async def check_channel_subscription(bot: Bot, user_id: int) -> bool:
         return True
 
 
-def _rules_url() -> str:
-    base = config.WEBHOOK_BASE_URL or config.RULES_URL
-    if base and not config.RULES_URL:
-        return f"{base.rstrip('/')}/legal/terms.html"
-    return config.RULES_URL
-
-
 def main_menu_kb(has_sub: bool = False) -> InlineKeyboardMarkup:
     buttons = [
         [
@@ -42,12 +35,6 @@ def main_menu_kb(has_sub: bool = False) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="Помощь", callback_data="help"),
         ],
     ]
-
-    rules = _rules_url()
-    if rules:
-        buttons.append([
-            InlineKeyboardButton(text="Правила сервиса", url=rules)
-        ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
