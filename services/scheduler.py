@@ -83,7 +83,7 @@ async def start_scheduler(bot: Bot) -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler()
     scheduler.add_job(check_subscriptions, "interval", minutes=30, args=[bot])
     scheduler.add_job(send_expiry_warnings, "interval", hours=12, args=[bot])
-    scheduler.add_job(sync_traffic, "interval", minutes=10)
+    scheduler.add_job(sync_traffic, "interval", seconds=40)
     scheduler.start()
     logger.info("Scheduler started (sub check: 30m, warnings: 12h, traffic sync: 10m)")
     return scheduler
