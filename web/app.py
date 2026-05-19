@@ -424,7 +424,7 @@ async def api_check_server(request):
         stdout, stderr, rc = await run_ssh_command(
             s["ip"], s["ssh_user"], s["ssh_password"],
             "echo ok && systemctl is-active xray 2>/dev/null || echo inactive",
-            s["ssh_port"], timeout=15, ssh_key=s.get("ssh_key", "")
+            s["ssh_port"], timeout=15, ssh_key=(s["ssh_key"] if "ssh_key" in s.keys() else "")
         )
         if rc != 0 or "ok" not in stdout:
             reason = stderr.strip() if stderr.strip() else "SSH connection failed"
