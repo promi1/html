@@ -372,12 +372,12 @@ async def setup_relay(relay_ip: str, relay_user: str, relay_pass: str,
                        ssh_key: str = "") -> bool:
     """Set up iptables relay (for whitelist servers)."""
     cmd = (
-        f"sysctl -w net.ipv4.ip_forward=1 && "
-        f"echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf && "
-        f"iptables -t nat -A PREROUTING -p tcp --dport {relay_port} -j DNAT --to-destination {target_ip}:{target_port} && "
-        f"iptables -t nat -A POSTROUTING -j MASQUERADE && "
-        f"apt-get install -y -qq iptables-persistent > /dev/null 2>&1; "
-        f"netfilter-persistent save 2>/dev/null; "
+        f"sudo sysctl -w net.ipv4.ip_forward=1 && "
+        f"echo 'net.ipv4.ip_forward=1' | sudo tee -a /etc/sysctl.conf > /dev/null && "
+        f"sudo iptables -t nat -A PREROUTING -p tcp --dport {relay_port} -j DNAT --to-destination {target_ip}:{target_port} && "
+        f"sudo iptables -t nat -A POSTROUTING -j MASQUERADE && "
+        f"sudo apt-get install -y -qq iptables-persistent > /dev/null 2>&1; "
+        f"sudo netfilter-persistent save 2>/dev/null; "
         f"echo RELAY_SETUP_OK"
     )
     stdout, stderr, rc = await run_ssh_command(relay_ip, relay_user, relay_pass, cmd, ssh_port, timeout=120, ssh_key=ssh_key)
