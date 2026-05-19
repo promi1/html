@@ -310,16 +310,19 @@ async def add_server_password(message: Message, state: FSMContext, bot: Bot):
 
     if is_relay:
         target_id = data.get("relay_target_id")
-        # Add relay server to DB
+        # Build display: WHITELIST 🇷🇺 → 🇩🇪
+        target = await get_server(target_id) if target_id else None
+        target_flag = flag(target["country_code"]) if target and target.get("country_code") else ""
+        relay_display = f"WHITELIST {f} → {target_flag}".strip()
+
         server_id = await add_server(
             ip=ip, ssh_user=ssh_user, ssh_password=password, ssh_port=22,
             country_code=cc, country_name=country, city=city,
-            display_name=f"{f} WHITELIST {display_name}",
+            display_name=relay_display,
             is_relay=1, relay_target_id=target_id
         )
 
         # Setup relay
-        target = await get_server(target_id) if target_id else None
         if target:
             await status_msg.edit_text(
                 f"\U0001f504 <b>Настраиваю relay...</b>\n\n"

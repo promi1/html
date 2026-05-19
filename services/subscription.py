@@ -90,7 +90,7 @@ async def handle_subscription(request: web.Request) -> web.Response:
         "Subscription-Userinfo": f"upload={upload_bytes}; download={download_bytes}; total=0; expire={int(expires.timestamp())}",
         "Content-Disposition": f'attachment; filename="vpn_sub"',
         "Profile-Update-Interval": "12",
-        "Profile-Title": "Premium VPN",
+        "Profile-Title": "GMBOT",
     }
 
     return web.Response(text=encoded, headers=headers)

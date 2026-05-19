@@ -170,16 +170,25 @@ async def add_server_post(request):
     display_name = f"{country}" + (f", {city}" if city else "")
 
     if is_relay:
+        # Build display name with flags: WHITELIST 🇷🇺 → 🇩🇪
+        from emoji import flag as _flag
+        relay_flag = _flag(cc) if cc else ""
+        target_flag = ""
+        if relay_target:
+            from database import get_server as gs
+            target = await gs(relay_target)
+            if target and target["country_code"]:
+                target_flag = _flag(target["country_code"])
+        relay_display = f"WHITELIST {relay_flag} → {target_flag}".strip()
+
         server_id = await add_server(
             ip=ip, ssh_user=ssh_user, ssh_password=ssh_password, ssh_port=ssh_port,
             country_code=cc, country_name=country, city=city,
-            display_name=f"WHITELIST {display_name}",
+            display_name=relay_display,
             is_relay=1, relay_target_id=relay_target if relay_target else None,
             ssh_key=ssh_key
         )
         if relay_target:
-            from database import get_server as gs
-            target = await gs(relay_target)
             if target:
                 ok = await setup_relay(ip, ssh_user, ssh_password,
                                         target["ip"], target["xray_port"],
