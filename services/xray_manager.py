@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 import logging
 import secrets
@@ -73,30 +74,42 @@ async def install_xray(ip: str, user: str, password: str, port: int = 22) -> boo
 
 async def generate_xray_keys(ip: str, user: str, password: str, port: int = 22) -> dict:
     """Generate UUID and x25519 keys on remote server."""
-    cmd = (
-        "UUID=$(xray uuid) && "
-        "KEYS=$(xray x25519) && "
-        "PRIV=$(echo \"$KEYS\" | grep 'Private' | awk '{print $NF}') && "
-        "PUB=$(echo \"$KEYS\" | grep 'Public' | awk '{print $NF}') && "
-        "echo \"UUID:$UUID\" && echo \"PRIVATE:$PRIV\" && echo \"PUBLIC:$PUB\""
+    # Step 1: get UUID
+    stdout_uuid, _, rc1 = await run_ssh_command(
+        ip, user, password, "/usr/local/bin/xray uuid", port, timeout=15
+    )
+    # Step 2: get x25519 keys
+    stdout_keys, _, rc2 = await run_ssh_command(
+        ip, user, password, "/usr/local/bin/xray x25519", port, timeout=15
     )
 
-    stdout, stderr, rc = await run_ssh_command(ip, user, password, cmd, port, timeout=30)
+    if rc1 != 0 or rc2 != 0:
+        logger.error(f"Key generation commands failed on {ip}: rc={rc1},{rc2}")
+        return {}
 
-    result = {}
-    for line in stdout.strip().split("\n"):
-        if line.startswith("UUID:"):
-            result["uuid"] = line.split(":", 1)[1].strip()
-        elif line.startswith("PRIVATE:"):
-            result["private_key"] = line.split(":", 1)[1].strip()
-        elif line.startswith("PUBLIC:"):
-            result["public_key"] = line.split(":", 1)[1].strip()
+    uuid_val = stdout_uuid.strip()
+    private_key = ""
+    public_key = ""
+    for line in stdout_keys.strip().split("\n"):
+        parts = line.split()
+        if not parts:
+            continue
+        # PrivateKey: xxx  or  Private key: xxx
+        if "rivate" in line.lower():
+            private_key = parts[-1]
+        # PublicKey: xxx  or  Public key: xxx  or  Password (PublicKey): xxx
+        elif "ublic" in line.lower():
+            public_key = parts[-1]
 
-    if all(k in result for k in ("uuid", "private_key", "public_key")):
-        result["short_id"] = _generate_short_id()
-        return result
+    if uuid_val and private_key and public_key:
+        return {
+            "uuid": uuid_val,
+            "private_key": private_key,
+            "public_key": public_key,
+            "short_id": _generate_short_id(),
+        }
 
-    logger.error(f"Key generation failed on {ip}: {stdout} | {stderr}")
+    logger.error(f"Key generation failed on {ip}: uuid={stdout_uuid} keys={stdout_keys}")
     return {}
 
 
@@ -147,11 +160,11 @@ async def deploy_xray_config(ip: str, user: str, password: str,
                               ssh_port: int = 22) -> bool:
     """Deploy Xray config and start service on remote server."""
     config_json = build_xray_config(uuid_val, private_key, short_id, sni, xray_port)
-    escaped_config = config_json.replace("'", "'\\''")
+    b64 = base64.b64encode(config_json.encode()).decode()
 
     cmd = (
         f"mkdir -p /usr/local/etc/xray && "
-        f"echo '{escaped_config}' > /usr/local/etc/xray/config.json && "
+        f"echo {b64} | base64 -d > /usr/local/etc/xray/config.json && "
         f"systemctl enable xray && "
         f"systemctl restart xray && "
         f"sleep 2 && "
