@@ -334,6 +334,95 @@ async def get_total_revenue():
             return row[0]
 
 
+# ─── Users (extended) ────────────────────────────────────────────────────
+
+async def search_users(query: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        like = f"%{query}%"
+        async with db.execute("""
+            SELECT * FROM users
+            WHERE username LIKE ? OR first_name LIKE ? OR CAST(user_id AS TEXT) LIKE ?
+            ORDER BY created_at DESC
+        """, (like, like, like)) as cur:
+            return await cur.fetchall()
+
+
+async def get_user_total_payments(user_id: int) -> float:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT COALESCE(SUM(amount), 0) FROM payments WHERE user_id = ? AND status = 'paid'",
+            (user_id,)
+        ) as cur:
+            row = await cur.fetchone()
+            return row[0]
+
+
+async def get_all_users_with_payments():
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT u.*,
+                   COALESCE(p.total_paid, 0) as total_paid,
+                   s.sub_token, s.expires_at as sub_expires
+            FROM users u
+            LEFT JOIN (SELECT user_id, SUM(amount) as total_paid FROM payments WHERE status='paid' GROUP BY user_id) p
+                ON u.user_id = p.user_id
+            LEFT JOIN (SELECT user_id, sub_token, expires_at FROM subscriptions WHERE is_active=1) s
+                ON u.user_id = s.user_id
+            ORDER BY u.created_at DESC
+        """) as cur:
+            return await cur.fetchall()
+
+
+# ─── Traffic ─────────────────────────────────────────────────────────────
+
+async def ensure_traffic_table():
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS traffic (
+                user_id INTEGER NOT NULL,
+                upload INTEGER DEFAULT 0,
+                download INTEGER DEFAULT 0,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY(user_id),
+                FOREIGN KEY(user_id) REFERENCES users(user_id)
+            )
+        """)
+        await db.commit()
+
+
+async def update_traffic(user_id: int, upload: int, download: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT INTO traffic (user_id, upload, download, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                upload = upload + excluded.upload,
+                download = download + excluded.download,
+                updated_at = CURRENT_TIMESTAMP
+        """, (user_id, upload, download))
+        await db.commit()
+
+
+async def get_traffic(user_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM traffic WHERE user_id = ?", (user_id,)) as cur:
+            row = await cur.fetchone()
+            if row:
+                return dict(row)
+            return {"user_id": user_id, "upload": 0, "download": 0}
+
+
+async def get_all_traffic():
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM traffic") as cur:
+            rows = await cur.fetchall()
+            return {r["user_id"]: dict(r) for r in rows}
+
+
 # ─── Settings ────────────────────────────────────────────────────────────
 
 async def get_setting(key: str, default: str = "") -> str:

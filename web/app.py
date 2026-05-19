@@ -1,3 +1,5 @@
+import csv
+import io
 import logging
 import os
 from aiohttp import web
@@ -6,7 +8,9 @@ import jinja2
 from config import config
 from database import (get_all_servers, get_server, get_all_users, get_user_count,
                        get_active_sub_count, get_total_revenue, get_all_subscriptions,
-                       add_server, delete_server, toggle_server, update_server_xray, get_user)
+                       add_server, delete_server, toggle_server, update_server_xray,
+                       get_user, add_balance, search_users, get_user_total_payments,
+                       get_all_users_with_payments, get_all_traffic, ensure_traffic_table)
 from services.country import detect_country
 from services.xray_manager import setup_server_full, setup_relay, check_server_alive
 from emoji import flag
@@ -111,18 +115,19 @@ async def add_server_post(request):
     ip = data.get("ip", "").strip()
     ssh_user = data.get("ssh_user", "root").strip() or "root"
     ssh_password = data.get("ssh_password", "").strip()
+    ssh_key = data.get("ssh_key", "").strip()
     ssh_port = int(data.get("ssh_port", "22") or "22")
     is_relay = data.get("is_relay") == "on"
     relay_target = int(data.get("relay_target", "0") or "0")
     sni = data.get("sni", "www.google.com").strip() or "www.google.com"
     xray_port = int(data.get("xray_port", "443") or "443")
 
-    if not ip or not ssh_password:
+    if not ip or (not ssh_password and not ssh_key):
         servers = await get_all_servers()
         vpn_servers = [s for s in servers if not s["is_relay"] and s["xray_uuid"]]
         return aiohttp_jinja2.render_template("add_server.html", request, {
             "vpn_servers": vpn_servers,
-            "error": "IP и пароль обязательны",
+            "error": "IP и пароль (или SSH ключ) обязательны",
             "success": ""
         })
 
@@ -146,7 +151,8 @@ async def add_server_post(request):
             if target:
                 ok = await setup_relay(ip, ssh_user, ssh_password,
                                         target["ip"], target["xray_port"],
-                                        xray_port, ssh_port)
+                                        xray_port, ssh_port,
+                                        ssh_key=ssh_key)
                 if not ok:
                     servers = await get_all_servers()
                     vpn_servers = [s for s in servers if not s["is_relay"] and s["xray_uuid"]]
@@ -163,7 +169,7 @@ async def add_server_post(request):
             display_name=display_name
         )
         # Auto-setup Xray
-        result = await setup_server_full(ip, ssh_user, ssh_password, ssh_port, sni, xray_port)
+        result = await setup_server_full(ip, ssh_user, ssh_password, ssh_port, sni, xray_port, ssh_key=ssh_key)
         if "error" in result:
             servers = await get_all_servers()
             vpn_servers = [s for s in servers if not s["is_relay"] and s["xray_uuid"]]
@@ -226,24 +232,81 @@ async def reinstall_xray_handler(request):
 async def users_page(request):
     if not check_auth(request):
         raise web.HTTPFound("/admin/login")
-    users = await get_all_users()
+    query = request.rel_url.query.get("q", "").strip()
+    if query:
+        users = await search_users(query)
+    else:
+        users = await get_all_users()
     subs = await get_all_subscriptions()
     sub_map = {}
     for s in subs:
         if s["is_active"]:
             sub_map[s["user_id"]] = s
+    await ensure_traffic_table()
+    traffic_map = await get_all_traffic()
     user_list = []
     for u in users:
+        uid = u["user_id"]
+        t = traffic_map.get(uid, {"upload": 0, "download": 0})
         user_list.append({
-            "user_id": u["user_id"],
+            "user_id": uid,
             "username": u["username"],
             "first_name": u["first_name"],
             "balance": u["balance"],
             "created_at": u["created_at"],
-            "has_sub": u["user_id"] in sub_map,
-            "sub_expires": sub_map[u["user_id"]]["expires_at"][:10] if u["user_id"] in sub_map else "",
+            "has_sub": uid in sub_map,
+            "sub_expires": sub_map[uid]["expires_at"][:10] if uid in sub_map else "",
+            "upload": t["upload"],
+            "download": t["download"],
         })
-    return {"users": user_list}
+    return {"users": user_list, "query": query}
+
+
+async def add_balance_handler(request):
+    if not check_auth(request):
+        raise web.HTTPFound("/admin/login")
+    data = await request.post()
+    user_id = int(data.get("user_id", 0))
+    amount = float(data.get("amount", 0))
+    if user_id and amount:
+        await add_balance(user_id, amount)
+    raise web.HTTPFound(f"/admin/users?q={user_id}")
+
+
+async def export_users_csv(request):
+    if not check_auth(request):
+        raise web.HTTPFound("/admin/login")
+    users = await get_all_users_with_payments()
+    await ensure_traffic_table()
+    traffic_map = await get_all_traffic()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Telegram ID", "Username", "First Name", "Balance",
+                     "Total Paid", "Upload (MB)", "Download (MB)",
+                     "Sub Token", "Sub Expires", "Created"])
+    for u in users:
+        uid = u["user_id"]
+        t = traffic_map.get(uid, {"upload": 0, "download": 0})
+        writer.writerow([
+            uid,
+            u["username"] or "",
+            u["first_name"] or "",
+            u["balance"],
+            u["total_paid"],
+            round(t["upload"] / 1048576, 2),
+            round(t["download"] / 1048576, 2),
+            u["sub_token"] or "",
+            u["sub_expires"] or "",
+            u["created_at"],
+        ])
+
+    resp = web.Response(
+        text=output.getvalue(),
+        content_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=users_export.csv"}
+    )
+    return resp
 
 
 @aiohttp_jinja2.template("settings.html")
@@ -275,6 +338,8 @@ def create_web_app() -> web.Application:
     app.router.add_get("/admin/servers/toggle/{id}/{active}", toggle_server_handler)
     app.router.add_get("/admin/servers/reinstall/{id}", reinstall_xray_handler)
     app.router.add_get("/admin/users", users_page)
+    app.router.add_post("/admin/users/add_balance", add_balance_handler)
+    app.router.add_get("/admin/users/export", export_users_csv)
     app.router.add_get("/admin/settings", settings_page)
 
     # Static files

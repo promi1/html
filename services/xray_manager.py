@@ -12,14 +12,30 @@ def _generate_short_id() -> str:
 
 
 async def run_ssh_command(ip: str, user: str, password: str, command: str,
-                          port: int = 22, timeout: int = 120) -> tuple:
-    """Run command on remote server via SSH. Returns (stdout, stderr, returncode)."""
-    ssh_cmd = (
-        f"sshpass -p '{password}' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 "
-        f"-o ServerAliveInterval=30 -p {port} {user}@{ip} "
-        f"'{command}'"
-    )
+                          port: int = 22, timeout: int = 120,
+                          ssh_key: str = "") -> tuple:
+    """Run command on remote server via SSH. Returns (stdout, stderr, returncode).
+    If ssh_key is provided, writes it to a temp file and uses -i flag instead of sshpass.
+    """
+    key_file = ""
     try:
+        if ssh_key:
+            import tempfile, os
+            fd, key_file = tempfile.mkstemp(prefix="ssh_key_", suffix=".pem")
+            os.write(fd, ssh_key.encode())
+            os.close(fd)
+            os.chmod(key_file, 0o600)
+            ssh_cmd = (
+                f"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 "
+                f"-o ServerAliveInterval=30 -i {key_file} -p {port} {user}@{ip} "
+                f"'{command}'"
+            )
+        else:
+            ssh_cmd = (
+                f"sshpass -p '{password}' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 "
+                f"-o ServerAliveInterval=30 -p {port} {user}@{ip} "
+                f"'{command}'"
+            )
         proc = await asyncio.create_subprocess_shell(
             ssh_cmd,
             stdout=asyncio.subprocess.PIPE,
@@ -33,14 +49,21 @@ async def run_ssh_command(ip: str, user: str, password: str, command: str,
     except Exception as ex:
         logger.error(f"SSH error for {ip}: {ex}")
         return "", str(ex), -1
+    finally:
+        if key_file:
+            import os
+            try:
+                os.unlink(key_file)
+            except OSError:
+                pass
 
 
-async def check_server_alive(ip: str, user: str, password: str, port: int = 22) -> bool:
-    stdout, stderr, rc = await run_ssh_command(ip, user, password, "echo ok", port, timeout=15)
+async def check_server_alive(ip: str, user: str, password: str, port: int = 22, ssh_key: str = "") -> bool:
+    stdout, stderr, rc = await run_ssh_command(ip, user, password, "echo ok", port, timeout=15, ssh_key=ssh_key)
     return rc == 0 and "ok" in stdout
 
 
-async def install_xray(ip: str, user: str, password: str, port: int = 22) -> bool:
+async def install_xray(ip: str, user: str, password: str, port: int = 22, ssh_key: str = "") -> bool:
     """Install Xray on remote server."""
     logger.info(f"Installing Xray on {ip}...")
 
@@ -54,7 +77,7 @@ async def install_xray(ip: str, user: str, password: str, port: int = 22) -> boo
         "&& echo XRAY_INSTALL_OK"
     )
 
-    stdout, stderr, rc = await run_ssh_command(ip, user, password, install_cmd, port, timeout=300)
+    stdout, stderr, rc = await run_ssh_command(ip, user, password, install_cmd, port, timeout=300, ssh_key=ssh_key)
 
     if "XRAY_INSTALL_OK" not in stdout:
         # Try alternative install
@@ -62,7 +85,7 @@ async def install_xray(ip: str, user: str, password: str, port: int = 22) -> boo
             "curl -Ls https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash && "
             "echo XRAY_INSTALL_OK"
         )
-        stdout, stderr, rc = await run_ssh_command(ip, user, password, alt_cmd, port, timeout=300)
+        stdout, stderr, rc = await run_ssh_command(ip, user, password, alt_cmd, port, timeout=300, ssh_key=ssh_key)
 
     if "XRAY_INSTALL_OK" in stdout:
         logger.info(f"Xray installed on {ip}")
@@ -72,15 +95,15 @@ async def install_xray(ip: str, user: str, password: str, port: int = 22) -> boo
     return False
 
 
-async def generate_xray_keys(ip: str, user: str, password: str, port: int = 22) -> dict:
+async def generate_xray_keys(ip: str, user: str, password: str, port: int = 22, ssh_key: str = "") -> dict:
     """Generate UUID and x25519 keys on remote server."""
     # Step 1: get UUID
     stdout_uuid, _, rc1 = await run_ssh_command(
-        ip, user, password, "/usr/local/bin/xray uuid", port, timeout=15
+        ip, user, password, "/usr/local/bin/xray uuid", port, timeout=15, ssh_key=ssh_key
     )
     # Step 2: get x25519 keys
     stdout_keys, _, rc2 = await run_ssh_command(
-        ip, user, password, "/usr/local/bin/xray x25519", port, timeout=15
+        ip, user, password, "/usr/local/bin/xray x25519", port, timeout=15, ssh_key=ssh_key
     )
 
     if rc1 != 0 or rc2 != 0:
@@ -157,7 +180,7 @@ def build_xray_config(uuid_val: str, private_key: str, short_id: str,
 async def deploy_xray_config(ip: str, user: str, password: str,
                               uuid_val: str, private_key: str, short_id: str,
                               sni: str = "www.google.com", xray_port: int = 443,
-                              ssh_port: int = 22) -> bool:
+                              ssh_port: int = 22, ssh_key: str = "") -> bool:
     """Deploy Xray config and start service on remote server."""
     config_json = build_xray_config(uuid_val, private_key, short_id, sni, xray_port)
     b64 = base64.b64encode(config_json.encode()).decode()
@@ -172,7 +195,7 @@ async def deploy_xray_config(ip: str, user: str, password: str,
         f"echo CONFIG_DEPLOYED_OK"
     )
 
-    stdout, stderr, rc = await run_ssh_command(ip, user, password, cmd, ssh_port, timeout=60)
+    stdout, stderr, rc = await run_ssh_command(ip, user, password, cmd, ssh_port, timeout=60, ssh_key=ssh_key)
 
     if "CONFIG_DEPLOYED_OK" in stdout:
         logger.info(f"Xray config deployed on {ip}")
@@ -183,19 +206,20 @@ async def deploy_xray_config(ip: str, user: str, password: str,
 
 
 async def setup_server_full(ip: str, user: str, password: str, ssh_port: int = 22,
-                             sni: str = "www.google.com", xray_port: int = 443) -> dict:
+                             sni: str = "www.google.com", xray_port: int = 443,
+                             ssh_key: str = "") -> dict:
     """Full auto-setup: install Xray, generate keys, deploy config."""
 
     # Check alive
-    if not await check_server_alive(ip, user, password, ssh_port):
+    if not await check_server_alive(ip, user, password, ssh_port, ssh_key=ssh_key):
         return {"error": "Server unreachable via SSH"}
 
     # Install Xray
-    if not await install_xray(ip, user, password, ssh_port):
+    if not await install_xray(ip, user, password, ssh_port, ssh_key=ssh_key):
         return {"error": "Xray installation failed"}
 
     # Generate keys
-    keys = await generate_xray_keys(ip, user, password, ssh_port)
+    keys = await generate_xray_keys(ip, user, password, ssh_port, ssh_key=ssh_key)
     if not keys:
         return {"error": "Key generation failed"}
 
@@ -203,13 +227,13 @@ async def setup_server_full(ip: str, user: str, password: str, ssh_port: int = 2
     ok = await deploy_xray_config(
         ip, user, password,
         keys["uuid"], keys["private_key"], keys["short_id"],
-        sni, xray_port, ssh_port
+        sni, xray_port, ssh_port, ssh_key=ssh_key
     )
     if not ok:
         return {"error": "Config deployment failed"}
 
     # Optimize network
-    await optimize_network(ip, user, password, ssh_port)
+    await optimize_network(ip, user, password, ssh_port, ssh_key=ssh_key)
 
     return {
         "uuid": keys["uuid"],
@@ -221,7 +245,7 @@ async def setup_server_full(ip: str, user: str, password: str, ssh_port: int = 2
     }
 
 
-async def optimize_network(ip: str, user: str, password: str, ssh_port: int = 22):
+async def optimize_network(ip: str, user: str, password: str, ssh_port: int = 22, ssh_key: str = ""):
     """Apply network optimizations for better VPN throughput."""
     sysctl_cmd = (
         "cat >> /etc/sysctl.conf << 'SYSCTL_EOF'\n"
@@ -235,14 +259,15 @@ async def optimize_network(ip: str, user: str, password: str, ssh_port: int = 22
         "SYSCTL_EOF\n"
         "sysctl -p 2>/dev/null; echo NET_OPT_OK"
     )
-    stdout, _, _ = await run_ssh_command(ip, user, password, sysctl_cmd, ssh_port, timeout=30)
+    stdout, _, _ = await run_ssh_command(ip, user, password, sysctl_cmd, ssh_port, timeout=30, ssh_key=ssh_key)
     if "NET_OPT_OK" in stdout:
         logger.info(f"Network optimized on {ip}")
 
 
 async def setup_relay(relay_ip: str, relay_user: str, relay_pass: str,
                        target_ip: str, target_port: int = 443,
-                       relay_port: int = 443, ssh_port: int = 22) -> bool:
+                       relay_port: int = 443, ssh_port: int = 22,
+                       ssh_key: str = "") -> bool:
     """Set up iptables relay (for whitelist servers)."""
     cmd = (
         f"sysctl -w net.ipv4.ip_forward=1 && "
@@ -253,7 +278,7 @@ async def setup_relay(relay_ip: str, relay_user: str, relay_pass: str,
         f"netfilter-persistent save 2>/dev/null; "
         f"echo RELAY_SETUP_OK"
     )
-    stdout, stderr, rc = await run_ssh_command(relay_ip, relay_user, relay_pass, cmd, ssh_port, timeout=120)
+    stdout, stderr, rc = await run_ssh_command(relay_ip, relay_user, relay_pass, cmd, ssh_port, timeout=120, ssh_key=ssh_key)
     if "RELAY_SETUP_OK" in stdout:
         logger.info(f"Relay {relay_ip} -> {target_ip}:{target_port} configured")
         return True

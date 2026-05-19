@@ -10,10 +10,8 @@ from aiogram.client.default import DefaultBotProperties
 from config import config
 from database import init_db
 from services.scheduler import start_scheduler
-from services.subscription import create_sub_app
 from webhooks.cryptopay_webhook import handle_cryptopay_webhook
 from webhooks.lolz_webhook import handle_lolz_webhook
-from web.app import create_web_app
 
 from handlers import start, subscription, payment, admin, profile, tutorials
 
@@ -28,7 +26,7 @@ logger = logging.getLogger(__name__)
 async def on_startup(bot: Bot):
     logger.info("Bot starting up...")
     await init_db()
-    start_scheduler(bot)
+    await start_scheduler(bot)
     me = await bot.get_me()
     logger.info(f"Bot @{me.username} (id={me.id}) started")
 
@@ -57,7 +55,8 @@ async def main():
     dp.startup.register(on_startup)
 
     # --- HTTP server for webhooks + subscription + web admin ---
-    app = web.Application()
+    from web.app import create_web_app
+    app = create_web_app()
     app["bot"] = bot
 
     # Payment webhooks
@@ -65,38 +64,8 @@ async def main():
     app.router.add_post("/webhook/lolz", handle_lolz_webhook)
 
     # Subscription endpoint
-    sub_app = create_sub_app()
-    app.add_subapp("/", sub_app)
-
-    # Web admin panel
-    web_app = create_web_app()
-    for route in web_app.router.routes():
-        resource = route.resource
-        if resource is not None:
-            info = resource.get_info()
-            if "formatter" in info:
-                path = info["formatter"]
-            elif "path" in info:
-                path = info["path"]
-            else:
-                continue
-            # Re-register route on main app
-            if hasattr(route, "method") and route.method == "POST":
-                app.router.add_post(path, route.handler)
-            elif hasattr(route, "method"):
-                app.router.add_get(path, route.handler)
-
-    # Serve static files for admin panel
-    import os
-    static_dir = os.path.join(os.path.dirname(__file__), "web", "static")
-    if os.path.exists(static_dir):
-        app.router.add_static("/static", static_dir, name="static")
-
-    # Setup jinja2 on main app too
-    import aiohttp_jinja2
-    import jinja2
-    templates_dir = os.path.join(os.path.dirname(__file__), "web", "templates")
-    aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(templates_dir))
+    from services.subscription import handle_subscription
+    app.router.add_get("/sub/{token}", handle_subscription)
 
     runner = web.AppRunner(app)
     await runner.setup()

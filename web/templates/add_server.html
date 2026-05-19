@@ -36,9 +36,14 @@
                     <input type="text" name="ssh_user" value="root" placeholder="root">
                 </div>
                 <div class="form-group">
-                    <label>Пароль *</label>
-                    <input type="password" name="ssh_password" required>
+                    <label>Пароль</label>
+                    <input type="password" name="ssh_password" placeholder="Пароль или оставьте пустым для SSH-ключа">
                 </div>
+            </div>
+            <div class="form-group">
+                <label>SSH ключ (приватный, для Yandex и подобных)</label>
+                <textarea name="ssh_key" rows="4" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----" style="font-family:monospace;font-size:0.8rem;"></textarea>
+                <small class="text-muted">Вставьте приватный SSH ключ если сервер не принимает пароль (например Yandex Cloud)</small>
             </div>
         </div>
 
