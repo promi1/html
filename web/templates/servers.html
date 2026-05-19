@@ -1,12 +1,23 @@
 {% extends "base.html" %}
 {% set active = "servers" %}
+{% from "_icons.html" import icon %}
 
-{% block title %}Серверы — VPN Admin{% endblock %}
+{% block title %}Servers — VPN Admin{% endblock %}
+
+{% block breadcrumbs %}
+<span class="current">Servers</span>
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="/admin/servers/add" class="btn btn-primary btn-sm">
+    {{ icon('plus', 16) }} Add server
+</a>
+{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>🌐 Серверы</h1>
-    <a href="/admin/servers/add" class="btn btn-primary">➕ Добавить сервер</a>
+    <h1 class="page-title">Servers</h1>
+    <span class="text-muted">{{ servers|length }} total</span>
 </div>
 
 {% if servers %}
@@ -15,53 +26,73 @@
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Страна</th>
+                <th>Location</th>
                 <th>IP</th>
-                <th>Тип</th>
+                <th>Type</th>
                 <th>Xray</th>
-                <th>Статус</th>
-                <th>Скорость</th>
-                <th>Действия</th>
+                <th>Status</th>
+                <th>Speed</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for s in servers %}
             <tr>
-                <td>{{ s.id }}</td>
-                <td>{{ s.flag }} {{ s.display_name or s.country_name or '—' }}</td>
-                <td><code>{{ s.ip }}</code></td>
+                <td class="mono text-muted">{{ s.id }}</td>
+                <td>
+                    <div class="server-location">
+                        <span class="server-flag">{{ s.flag }}</span>
+                        <span>{{ s.display_name or s.country_name or '—' }}</span>
+                    </div>
+                </td>
+                <td>
+                    <code class="mono">{{ s.ip }}</code>
+                    <button class="btn-icon" onclick="copyText('{{ s.ip }}', this)" title="Copy">
+                        {{ icon('copy', 14) }}
+                    </button>
+                </td>
                 <td>
                     {% if s.is_relay %}
-                    <span class="badge badge-relay">RELAY</span>
+                    <span class="badge badge-warning">RELAY</span>
                     {% else %}
-                    <span class="badge badge-vpn">VPN</span>
+                    <span class="badge badge-accent">VPN</span>
                     {% endif %}
                 </td>
                 <td>
                     {% if s.xray_configured %}
-                    <span class="badge badge-ok">✅ OK</span>
+                    <span class="badge badge-success">{{ icon('check', 12) }} OK</span>
                     {% else %}
-                    <span class="badge badge-err">❌ Нет</span>
+                    <span class="badge badge-danger">{{ icon('x', 12) }} No</span>
                     {% endif %}
                 </td>
                 <td>
                     {% if s.is_active %}
-                    <span class="badge badge-ok">🟢 Активен</span>
+                    <span class="status-dot online"></span> Active
                     {% else %}
-                    <span class="badge badge-err">🔴 Выкл</span>
+                    <span class="status-dot offline"></span> Off
                     {% endif %}
                 </td>
-                <td>{{ s.speed }}</td>
-                <td class="actions">
-                    {% if s.is_active %}
-                    <a href="/admin/servers/toggle/{{ s.id }}/0" class="btn btn-sm btn-warning" title="Отключить">⏸</a>
-                    {% else %}
-                    <a href="/admin/servers/toggle/{{ s.id }}/1" class="btn btn-sm btn-success" title="Включить">▶️</a>
-                    {% endif %}
-                    {% if not s.xray_configured and not s.is_relay %}
-                    <a href="/admin/servers/reinstall/{{ s.id }}" class="btn btn-sm btn-primary" title="Установить Xray">🚀</a>
-                    {% endif %}
-                    <a href="/admin/servers/delete/{{ s.id }}" class="btn btn-sm btn-danger" title="Удалить" onclick="return confirm('Удалить сервер {{ s.ip }}?')">🗑️</a>
+                <td class="text-muted">{{ s.speed }}</td>
+                <td>
+                    <div class="action-buttons">
+                        {% if s.is_active %}
+                        <a href="/admin/servers/toggle/{{ s.id }}/0" class="btn-icon" title="Disable">
+                            {{ icon('power', 16) }}
+                        </a>
+                        {% else %}
+                        <a href="/admin/servers/toggle/{{ s.id }}/1" class="btn-icon btn-icon-success" title="Enable">
+                            {{ icon('power', 16) }}
+                        </a>
+                        {% endif %}
+                        {% if not s.xray_configured and not s.is_relay %}
+                        <a href="/admin/servers/reinstall/{{ s.id }}" class="btn-icon btn-icon-accent" title="Install Xray">
+                            {{ icon('rotate-cw', 16) }}
+                        </a>
+                        {% endif %}
+                        <a href="/admin/servers/delete/{{ s.id }}" class="btn-icon btn-icon-danger" title="Delete" onclick="return confirm('Delete server {{ s.ip }}?')">
+                            {{ icon('trash-2', 16) }}
+                        </a>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
@@ -70,10 +101,12 @@
 </div>
 {% else %}
 <div class="empty-state">
-    <div class="empty-icon">🌐</div>
-    <h3>Нет серверов</h3>
-    <p>Добавьте первый VPN сервер</p>
-    <a href="/admin/servers/add" class="btn btn-primary">➕ Добавить сервер</a>
+    {{ icon('server', 48) }}
+    <h3>No servers</h3>
+    <p>Add your first VPN server</p>
+    <a href="/admin/servers/add" class="btn btn-primary">
+        {{ icon('plus', 16) }} Add server
+    </a>
 </div>
 {% endif %}
 {% endblock %}

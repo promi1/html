@@ -7,28 +7,107 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="/static/css/style.css">
+    {% block head %}{% endblock %}
 </head>
 <body>
+{% from "_icons.html" import icon %}
+<div class="app-layout">
     {% block nav %}
     <nav class="sidebar">
-        <div class="logo">
-            <span class="logo-icon">🛡️</span>
-            <span class="logo-text">VPN Panel</span>
+        <div class="sidebar-logo">
+            {{ icon('shield', 20) }}
+            <span>VPN Panel</span>
         </div>
-        <ul class="nav-links">
-            <li><a href="/admin/dashboard" class="{% if active == 'dashboard' %}active{% endif %}">📊 Дашборд</a></li>
-            <li><a href="/admin/servers" class="{% if active == 'servers' %}active{% endif %}">🌐 Серверы</a></li>
-            <li><a href="/admin/users" class="{% if active == 'users' %}active{% endif %}">👥 Пользователи</a></li>
-            <li><a href="/admin/settings" class="{% if active == 'settings' %}active{% endif %}">⚙️ Настройки</a></li>
-            <li style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08)"><a href="/help/" target="_blank">📖 Туториалы</a></li>
-            <li><a href="/legal/terms.html" target="_blank">📜 Правила</a></li>
-            <li><a href="/legal/privacy.html" target="_blank">🔒 Конфиденциальность</a></li>
-            <li><a href="/admin/logout" class="logout">🚪 Выход</a></li>
-        </ul>
+
+        <div class="nav-group">
+            <a href="/admin/dashboard" class="nav-item {% if active == 'dashboard' %}active{% endif %}">
+                {{ icon('layout-dashboard', 16) }}
+                <span>Dashboard</span>
+            </a>
+            <a href="/admin/servers" class="nav-item {% if active == 'servers' %}active{% endif %}">
+                {{ icon('server', 16) }}
+                <span>Servers</span>
+            </a>
+            <a href="/admin/users" class="nav-item {% if active == 'users' %}active{% endif %}">
+                {{ icon('users', 16) }}
+                <span>Users</span>
+            </a>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-group-label">System</div>
+            <a href="/admin/settings" class="nav-item {% if active == 'settings' %}active{% endif %}">
+                {{ icon('settings', 16) }}
+                <span>Settings</span>
+            </a>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-group-label">Docs</div>
+            <a href="/help/" target="_blank" class="nav-item {% if active == 'tutorials' %}active{% endif %}">
+                {{ icon('book-open', 16) }}
+                <span>Tutorials</span>
+            </a>
+            <a href="/legal/terms.html" target="_blank" class="nav-item">
+                {{ icon('file-text', 16) }}
+                <span>Terms</span>
+            </a>
+            <a href="/legal/privacy.html" target="_blank" class="nav-item">
+                {{ icon('lock', 16) }}
+                <span>Privacy</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-user-avatar">A</div>
+                <div class="sidebar-user-info">
+                    <div class="sidebar-user-name">Admin</div>
+                    <div class="sidebar-user-role">Administrator</div>
+                </div>
+                <a href="/admin/logout" class="sidebar-logout" data-tooltip="Logout">
+                    {{ icon('log-out', 16) }}
+                </a>
+            </div>
+        </div>
     </nav>
     {% endblock %}
-    <main class="content">
-        {% block content %}{% endblock %}
-    </main>
+
+    <div class="main-content">
+        <header class="topbar">
+            <div class="breadcrumbs">
+                {% block breadcrumbs %}
+                <span class="current">Dashboard</span>
+                {% endblock %}
+            </div>
+            <div class="topbar-actions">
+                {% block topbar_actions %}{% endblock %}
+            </div>
+        </header>
+
+        <div class="page">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('click', function(e) {
+    document.querySelectorAll('.dropdown.open').forEach(function(d) {
+        if (!d.contains(e.target)) d.classList.remove('open');
+    });
+});
+function toggleDropdown(el) {
+    el.closest('.dropdown').classList.toggle('open');
+}
+function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(function() {
+        var orig = btn.innerHTML;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>';
+        setTimeout(function() { btn.innerHTML = orig; }, 1200);
+    });
+}
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

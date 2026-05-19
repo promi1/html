@@ -5,7 +5,7 @@ from datetime import datetime
 
 from database import get_user, get_active_subscription
 from config import config
-from emoji import INFO, MONEY, STATS, SETTINGS, ARROW_UP, STOP, KEY, ROCKET
+from emoji import CHECK, CROSS, MONEY, STATS, SETTINGS, ARROW_UP, STOP, KEY, ROCKET
 
 router = Router()
 
@@ -16,18 +16,18 @@ async def profile_text(user_id: int) -> str:
     sub = await get_active_subscription(user_id)
 
     lines = [
-        f"{INFO} <b>Мой профиль</b>\n",
-        f"\U0001f464 ID: <code>{user_id}</code>",
-        f"{MONEY} Баланс: <b>{balance:.0f} \u20bd</b>",
+        f"<b>Мой профиль</b>\n",
+        f"ID: <code>{user_id}</code>",
+        f"Баланс: <b>{balance:.0f} \u20bd</b>",
     ]
 
     if sub:
         expires = datetime.fromisoformat(sub["expires_at"])
         days_left = (expires - datetime.utcnow()).days
-        lines.append(f"\n\U0001f7e2 <b>VPN:</b> Активен")
-        lines.append(f"\u23f3 До: {expires.strftime('%d.%m.%Y')} ({days_left} дн.)")
+        lines.append(f"\n<b>VPN:</b> Активен")
+        lines.append(f"До: {expires.strftime('%d.%m.%Y')} ({days_left} дн.)")
     else:
-        lines.append(f"\n\U0001f534 <b>VPN:</b> Неактивен")
+        lines.append(f"\n<b>VPN:</b> Неактивен")
 
     return "\n".join(lines)
 
@@ -35,14 +35,14 @@ async def profile_text(user_id: int) -> str:
 def profile_kb(has_sub: bool) -> InlineKeyboardMarkup:
     buttons = [
         [
-            InlineKeyboardButton(text=f"{ARROW_UP} Пополнить", callback_data="topup"),
+            InlineKeyboardButton(text="Пополнить", callback_data="topup"),
         ],
     ]
     if has_sub:
-        buttons.append([InlineKeyboardButton(text=f"{KEY} Мои ключи", callback_data="my_keys")])
+        buttons.append([InlineKeyboardButton(text="Мои ключи", callback_data="my_keys")])
     else:
-        buttons.append([InlineKeyboardButton(text=f"{ROCKET} Купить VPN", callback_data="buy_vpn")])
-    buttons.append([InlineKeyboardButton(text="\u25c0\ufe0f В меню", callback_data="main_menu")])
+        buttons.append([InlineKeyboardButton(text="Купить VPN", callback_data="buy_vpn")])
+    buttons.append([InlineKeyboardButton(text="Назад", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 

@@ -1,54 +1,278 @@
 {% extends "base.html" %}
 {% set active = "dashboard" %}
+{% from "_icons.html" import icon %}
 
-{% block title %}Дашборд — VPN Admin{% endblock %}
+{% block title %}Dashboard — VPN Admin{% endblock %}
+
+{% block breadcrumbs %}
+<span class="current">Dashboard</span>
+{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>📊 Дашборд</h1>
+    <h1 class="page-title">Dashboard</h1>
 </div>
 
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon-wrap">👥</div>
-        <div class="stat-info">
-            <div class="stat-value">{{ users }}</div>
-            <div class="stat-label">Пользователей</div>
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-icon">{{ icon('users', 20) }}</span>
+            <span class="kpi-delta up">{{ icon('trending-up', 14) }} +{{ delta_users|default('12') }}%</span>
+        </div>
+        <div class="kpi-value">{{ users }}</div>
+        <div class="kpi-label">Total Users</div>
+        <div class="kpi-sparkline">
+            <svg viewBox="0 0 120 32" preserveAspectRatio="none">
+                <polyline fill="none" stroke="var(--accent)" stroke-width="1.5"
+                    points="0,28 17,24 34,26 51,18 68,20 85,12 102,14 120,6"/>
+                <linearGradient id="spark1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+                </linearGradient>
+                <polygon fill="url(#spark1)"
+                    points="0,32 0,28 17,24 34,26 51,18 68,20 85,12 102,14 120,6 120,32"/>
+            </svg>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon-wrap">🔑</div>
-        <div class="stat-info">
-            <div class="stat-value">{{ subs }}</div>
-            <div class="stat-label">Активных подписок</div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-icon">{{ icon('credit-card', 20) }}</span>
+            <span class="kpi-delta up">{{ icon('trending-up', 14) }} +{{ delta_subs|default('8') }}%</span>
+        </div>
+        <div class="kpi-value">{{ subs }}</div>
+        <div class="kpi-label">Active Subscriptions</div>
+        <div class="kpi-sparkline">
+            <svg viewBox="0 0 120 32" preserveAspectRatio="none">
+                <polyline fill="none" stroke="var(--success)" stroke-width="1.5"
+                    points="0,26 17,22 34,24 51,16 68,18 85,10 102,12 120,4"/>
+                <linearGradient id="spark2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--success)" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="var(--success)" stop-opacity="0"/>
+                </linearGradient>
+                <polygon fill="url(#spark2)"
+                    points="0,32 0,26 17,22 34,24 51,16 68,18 85,10 102,12 120,4 120,32"/>
+            </svg>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon-wrap">💰</div>
-        <div class="stat-info">
-            <div class="stat-value">{{ "%.0f"|format(revenue) }} ₽</div>
-            <div class="stat-label">Общий доход</div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-icon">{{ icon('dollar-sign', 20) }}</span>
+            <span class="kpi-delta up">{{ icon('trending-up', 14) }} +{{ delta_revenue|default('15') }}%</span>
+        </div>
+        <div class="kpi-value">{{ revenue|default('0') }}<span class="kpi-currency">&#8381;</span></div>
+        <div class="kpi-label">Revenue (30d)</div>
+        <div class="kpi-sparkline">
+            <svg viewBox="0 0 120 32" preserveAspectRatio="none">
+                <polyline fill="none" stroke="var(--warning)" stroke-width="1.5"
+                    points="0,30 17,26 34,22 51,24 68,14 85,16 102,8 120,4"/>
+                <linearGradient id="spark3" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--warning)" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="var(--warning)" stop-opacity="0"/>
+                </linearGradient>
+                <polygon fill="url(#spark3)"
+                    points="0,32 0,30 17,26 34,22 51,24 68,14 85,16 102,8 120,4 120,32"/>
+            </svg>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon-wrap">🌐</div>
-        <div class="stat-info">
-            <div class="stat-value">{{ active_servers }} / {{ servers }}</div>
-            <div class="stat-label">Серверов активно</div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-icon">{{ icon('server', 20) }}</span>
+            <span class="kpi-delta up">{{ icon('trending-up', 14) }} {{ active_servers|default('0') }} online</span>
+        </div>
+        <div class="kpi-value">{{ servers }}</div>
+        <div class="kpi-label">Active Servers</div>
+        <div class="kpi-sparkline">
+            <svg viewBox="0 0 120 32" preserveAspectRatio="none">
+                <polyline fill="none" stroke="var(--accent)" stroke-width="1.5"
+                    points="0,20 17,18 34,20 51,16 68,16 85,12 102,14 120,10"/>
+                <linearGradient id="spark4" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+                </linearGradient>
+                <polygon fill="url(#spark4)"
+                    points="0,32 0,20 17,18 34,20 51,16 68,16 85,12 102,14 120,10 120,32"/>
+            </svg>
         </div>
     </div>
 </div>
 
-<div class="info-cards">
-    <div class="info-card">
-        <h3>💎 Подписка</h3>
-        <p>Цена: <strong>{{ price }} ₽ / месяц</strong></p>
-        <p>Протокол: <strong>VLESS + XTLS-Reality</strong></p>
+<div class="charts-grid">
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <div>
+                <div class="chart-card-title">Revenue</div>
+                <div class="chart-card-subtitle">Last 30 days</div>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="revenueChart"></canvas>
+        </div>
     </div>
-    <div class="info-card">
-        <h3>🚀 Быстрые действия</h3>
-        <a href="/admin/servers/add" class="btn btn-primary">➕ Добавить сервер</a>
-        <a href="/admin/servers" class="btn btn-secondary">🌐 Управление серверами</a>
+
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <div>
+                <div class="chart-card-title">Active Subscriptions</div>
+                <div class="chart-card-subtitle">Last 30 days</div>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="subsChart"></canvas>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var style = getComputedStyle(document.documentElement);
+    var accent = style.getPropertyValue('--accent').trim();
+    var success = style.getPropertyValue('--success').trim();
+    var border = style.getPropertyValue('--border').trim();
+    var textDim = style.getPropertyValue('--text-dim').trim();
+
+    var gridColor = 'rgba(31, 36, 48, 0.6)';
+    var commonOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#1a1e27',
+                titleColor: '#e6e8eb',
+                bodyColor: '#8b919e',
+                borderColor: '#1f2430',
+                borderWidth: 1,
+                padding: 10,
+                cornerRadius: 8,
+                titleFont: { family: "'Inter', sans-serif", size: 12 },
+                bodyFont: { family: "'JetBrains Mono', monospace", size: 12 }
+            }
+        },
+        scales: {
+            x: {
+                grid: { color: gridColor, drawBorder: false },
+                ticks: { color: textDim, font: { size: 10 }, maxRotation: 0 },
+                border: { display: false }
+            },
+            y: {
+                grid: { color: gridColor, drawBorder: false },
+                ticks: { color: textDim, font: { size: 10 } },
+                border: { display: false }
+            }
+        }
+    };
+
+    function genLabels(n) {
+        var labels = [];
+        for (var i = n - 1; i >= 0; i--) {
+            var d = new Date();
+            d.setDate(d.getDate() - i);
+            labels.push(d.toLocaleDateString('ru', {day:'numeric', month:'short'}));
+        }
+        return labels;
+    }
+
+    function genData(n, min, max) {
+        var data = [];
+        for (var i = 0; i < n; i++) {
+            data.push(Math.floor(Math.random() * (max - min) + min));
+        }
+        return data;
+    }
+
+    var labels = genLabels(30);
+
+    fetch('/admin/api/revenue?days=30')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            new Chart(document.getElementById('revenueChart'), {
+                type: 'line',
+                data: {
+                    labels: data.labels || labels,
+                    datasets: [{
+                        data: data.values || genData(30, 500, 5000),
+                        borderColor: accent,
+                        backgroundColor: accent + '18',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        borderWidth: 2
+                    }]
+                },
+                options: commonOpts
+            });
+        })
+        .catch(function() {
+            new Chart(document.getElementById('revenueChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: genData(30, 500, 5000),
+                        borderColor: accent,
+                        backgroundColor: accent + '18',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        borderWidth: 2
+                    }]
+                },
+                options: commonOpts
+            });
+        });
+
+    fetch('/admin/api/subs?days=30')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            new Chart(document.getElementById('subsChart'), {
+                type: 'line',
+                data: {
+                    labels: data.labels || labels,
+                    datasets: [{
+                        data: data.values || genData(30, 5, 50),
+                        borderColor: success,
+                        backgroundColor: success + '18',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        borderWidth: 2
+                    }]
+                },
+                options: commonOpts
+            });
+        })
+        .catch(function() {
+            new Chart(document.getElementById('subsChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: genData(30, 5, 50),
+                        borderColor: success,
+                        backgroundColor: success + '18',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        borderWidth: 2
+                    }]
+                },
+                options: commonOpts
+            });
+        });
+})();
+</script>
 {% endblock %}

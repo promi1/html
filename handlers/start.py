@@ -20,25 +20,33 @@ async def check_channel_subscription(bot: Bot, user_id: int) -> bool:
         return True
 
 
+def _rules_url() -> str:
+    base = config.WEBHOOK_BASE_URL or config.RULES_URL
+    if base and not config.RULES_URL:
+        return f"{base.rstrip('/')}/legal/terms.html"
+    return config.RULES_URL
+
+
 def main_menu_kb(has_sub: bool = False) -> InlineKeyboardMarkup:
     buttons = [
         [
-            InlineKeyboardButton(text=f"{ROCKET} Купить VPN", callback_data="buy_vpn"),
-            InlineKeyboardButton(text=f"{PLUS} Пополнить", callback_data="topup"),
+            InlineKeyboardButton(text="Купить VPN", callback_data="buy_vpn"),
+            InlineKeyboardButton(text="Пополнить", callback_data="topup"),
         ],
         [
-            InlineKeyboardButton(text=f"{INFO} Мой профиль", callback_data="profile"),
-            InlineKeyboardButton(text=f"{KEY} Мои ключи", callback_data="my_keys"),
+            InlineKeyboardButton(text="Мой профиль", callback_data="profile"),
+            InlineKeyboardButton(text="Мои ключи", callback_data="my_keys"),
         ],
         [
-            InlineKeyboardButton(text=f"{GLOBE} Туториалы", callback_data="tutorials"),
-            InlineKeyboardButton(text=f"{WARNING} Помощь", callback_data="help"),
+            InlineKeyboardButton(text="Туториалы", callback_data="tutorials"),
+            InlineKeyboardButton(text="Помощь", callback_data="help"),
         ],
     ]
 
-    if config.RULES_URL:
+    rules = _rules_url()
+    if rules:
         buttons.append([
-            InlineKeyboardButton(text=f"{LOCK} Правила", url=config.RULES_URL)
+            InlineKeyboardButton(text="Правила сервиса", url=rules)
         ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -46,8 +54,8 @@ def main_menu_kb(has_sub: bool = False) -> InlineKeyboardMarkup:
 
 def channel_sub_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="\U0001f514 Подписаться на канал", url=config.CHANNEL_URL)],
-        [InlineKeyboardButton(text="\u2705 Я подписался", callback_data="check_sub")]
+        [InlineKeyboardButton(text="Подписаться на канал", url=config.CHANNEL_URL)],
+        [InlineKeyboardButton(text="Проверить подписку", callback_data="check_sub")]
     ])
 
 
@@ -73,11 +81,11 @@ async def cmd_start(message: Message, bot: Bot):
     has_sub = sub is not None
 
     await message.answer(
-        f"{SHIELD} <b>Добро пожаловать, {name}!</b>\n\n"
-        f"{ROCKET} Быстрый и надёжный VPN\n"
-        f"{GLOBE} Серверы по всему миру\n"
-        f"{LOCK} Протокол VLESS + XTLS-Reality\n\n"
-        f"\U0001f4b0 <b>Стоимость:</b> {config.PRICE_RUB} \u20bd / месяц\n\n"
+        f"<b>Добро пожаловать, {name}!</b>\n\n"
+        f"Быстрый и надёжный VPN\n"
+        f"Серверы по всему миру\n"
+        f"Протокол VLESS + XTLS-Reality\n\n"
+        f"Стоимость: <b>{config.PRICE_RUB} \u20bd / месяц</b>\n\n"
         f"Выберите действие:",
         parse_mode="HTML",
         reply_markup=main_menu_kb(has_sub)
@@ -91,11 +99,11 @@ async def check_sub_callback(call: CallbackQuery, bot: Bot):
         name = call.from_user.first_name or "пользователь"
         sub = await get_active_subscription(call.from_user.id)
         await call.message.edit_text(
-            f"{SHIELD} <b>Добро пожаловать, {name}!</b>\n\n"
-            f"{ROCKET} Быстрый и надёжный VPN\n"
-            f"{GLOBE} Серверы по всему миру\n"
-            f"{LOCK} Протокол VLESS + XTLS-Reality\n\n"
-            f"\U0001f4b0 <b>Стоимость:</b> {config.PRICE_RUB} \u20bd / месяц\n\n"
+            f"<b>Добро пожаловать, {name}!</b>\n\n"
+            f"Быстрый и надёжный VPN\n"
+            f"Серверы по всему миру\n"
+            f"Протокол VLESS + XTLS-Reality\n\n"
+            f"Стоимость: <b>{config.PRICE_RUB} \u20bd / месяц</b>\n\n"
             f"Выберите действие:",
             parse_mode="HTML",
             reply_markup=main_menu_kb(sub is not None)
@@ -109,7 +117,7 @@ async def back_to_menu(call: CallbackQuery):
     name = call.from_user.first_name or "пользователь"
     sub = await get_active_subscription(call.from_user.id)
     await call.message.edit_text(
-        f"{SHIELD} <b>Главное меню</b>\n\n"
+        f"<b>Главное меню</b>\n\n"
         f"Привет, {name}! Выберите действие:",
         parse_mode="HTML",
         reply_markup=main_menu_kb(sub is not None)
@@ -119,7 +127,7 @@ async def back_to_menu(call: CallbackQuery):
 @router.callback_query(F.data == "help")
 async def help_handler(call: CallbackQuery):
     await call.message.edit_text(
-        f"{WARNING} <b>Помощь / FAQ</b>\n\n"
+        f"<b>Помощь / FAQ</b>\n\n"
         f"<b>Как подключиться?</b>\n"
         f"1. Купите подписку в боте\n"
         f"2. Скопируйте ссылку подписки\n"
@@ -131,9 +139,9 @@ async def help_handler(call: CallbackQuery):
         f"\u2022 Проверьте что ссылка скопирована целиком\n"
         f"\u2022 Обновите подписку в приложении\n"
         f"\u2022 Попробуйте другой сервер\n\n"
-        f"{MESSAGE} <b>Поддержка:</b> напишите администратору",
+        f"<b>Поддержка:</b> напишите администратору",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="main_menu")]
+            [InlineKeyboardButton(text="Назад", callback_data="main_menu")]
         ])
     )

@@ -76,25 +76,26 @@ def tutorials_kb() -> InlineKeyboardMarkup:
     buttons = []
     for key, t in TUTORIALS.items():
         buttons.append([InlineKeyboardButton(
-            text=f"{t['icon']} {t['name']}", callback_data=f"tut:{key}"
+            text=f"{t['name']}", callback_data=f"tut:{key}"
         )])
-    web_base = f"http://{config.WEBHOOK_BASE_URL}" if config.WEBHOOK_BASE_URL else ""
+    base = config.WEBHOOK_BASE_URL or ""
+    web_base = base if base.startswith("http") else f"http://{base}" if base else ""
     if config.TUTORIAL_URL:
         buttons.append([InlineKeyboardButton(
-            text=f"{INFO} Подробный гайд", url=config.TUTORIAL_URL
+            text="Подробный гайд", url=config.TUTORIAL_URL
         )])
     elif web_base:
         buttons.append([InlineKeyboardButton(
-            text=f"{INFO} Все инструкции на сайте", url=f"{web_base}/help/"
+            text="Все инструкции на сайте", url=f"{web_base}/help/"
         )])
-    buttons.append([InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="main_menu")])
+    buttons.append([InlineKeyboardButton(text="Назад", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 @router.callback_query(F.data == "tutorials")
 async def tutorials_menu(call: CallbackQuery):
     await call.message.edit_text(
-        f"{GLOBE} <b>Туториалы по подключению</b>\n\n"
+        f"<b>Туториалы по подключению</b>\n\n"
         f"Выберите ваше устройство / приложение:",
         parse_mode="HTML",
         reply_markup=tutorials_kb()
@@ -113,7 +114,7 @@ async def tutorial_detail(call: CallbackQuery):
         tut["text"],
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="\u25c0\ufe0f Все туториалы", callback_data="tutorials")],
-            [InlineKeyboardButton(text="\U0001f3e0 В меню", callback_data="main_menu")]
+            [InlineKeyboardButton(text="Все туториалы", callback_data="tutorials")],
+            [InlineKeyboardButton(text="Назад", callback_data="main_menu")]
         ])
     )

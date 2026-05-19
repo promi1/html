@@ -23,11 +23,11 @@ CRYPTO_CURRENCIES = [
 
 def topup_menu_kb() -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton(text="\U0001f48e CryptoBot", callback_data="pay_crypto")],
+        [InlineKeyboardButton(text="CryptoBot", callback_data="pay_crypto")],
     ]
     if config.LOLZ_TOKEN:
-        buttons.append([InlineKeyboardButton(text=f"{LOLZ} Lolz.live", callback_data="pay_lolz")])
-    buttons.append([InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="main_menu")])
+        buttons.append([InlineKeyboardButton(text="Lolz.live", callback_data="pay_lolz")])
+    buttons.append([InlineKeyboardButton(text="Назад", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
@@ -43,7 +43,7 @@ def amount_kb(method: str) -> InlineKeyboardMarkup:
             row = []
     if row:
         rows.append(row)
-    rows.append([InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="topup")])
+    rows.append([InlineKeyboardButton(text="Назад", callback_data="topup")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -51,9 +51,9 @@ def crypto_currency_kb(amount: int) -> InlineKeyboardMarkup:
     rows = []
     for code, emoji_val, label in CRYPTO_CURRENCIES:
         rows.append([InlineKeyboardButton(
-            text=f"{emoji_val} {label}", callback_data=f"crypto_pay:{code}:{amount}"
+            text=f"{label}", callback_data=f"crypto_pay:{code}:{amount}"
         )])
-    rows.append([InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="pay_crypto")])
+    rows.append([InlineKeyboardButton(text="Назад", callback_data="pay_crypto")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -62,13 +62,13 @@ async def topup_menu(call: CallbackQuery):
     user = await get_user(call.from_user.id)
     balance = user["balance"] if user else 0
 
-    methods_text = "\U0001f48e <b>CryptoBot</b> \u2014 USDT, TON, TRX, BTC"
+    methods_text = "<b>CryptoBot</b> \u2014 USDT, TON, TRX, BTC"
     if config.LOLZ_TOKEN:
-        methods_text += f"\n{LOLZ} <b>Lolz.live</b> \u2014 рубли через маркетплейс"
+        methods_text += f"\n<b>Lolz.live</b> \u2014 рубли через маркетплейс"
 
     await call.message.edit_text(
-        f"{PLUS} <b>Пополнение баланса</b>\n\n"
-        f"{INFO} Текущий баланс: <b>{balance:.0f} \u20bd</b>\n\n"
+        f"<b>Пополнение баланса</b>\n\n"
+        f"Текущий баланс: <b>{balance:.0f} \u20bd</b>\n\n"
         f"Способы оплаты:\n{methods_text}\n\n"
         f"Выберите способ:",
         parse_mode="HTML",
@@ -82,7 +82,7 @@ async def pay_crypto(call: CallbackQuery):
         await call.answer("\u26a0\ufe0f CryptoBot ещё не настроен", show_alert=True)
         return
     await call.message.edit_text(
-        f"\U0001f48e <b>Оплата через CryptoBot</b>\n\n"
+        f"<b>Оплата через CryptoBot</b>\n\n"
         f"Выберите сумму пополнения:",
         parse_mode="HTML",
         reply_markup=amount_kb("crypto")
@@ -95,7 +95,7 @@ async def pay_lolz(call: CallbackQuery):
         await call.answer("\u26a0\ufe0f Lolz.live ещё не настроен", show_alert=True)
         return
     await call.message.edit_text(
-        f"{LOLZ} <b>Оплата через Lolz.live</b>\n\n"
+        f"<b>Оплата через Lolz.live</b>\n\n"
         f"Оплата в рублях через аккаунт Lolz Market.\n"
         f"Выберите сумму:",
         parse_mode="HTML",
@@ -110,8 +110,8 @@ async def amount_selected(call: CallbackQuery):
 
     if method == "crypto":
         await call.message.edit_text(
-            f"\U0001f48e <b>Сумма: {amount} \u20bd</b>\n\n"
-            f"Выберите криптовалюту:",
+                f"<b>Сумма: {amount} \u20bd</b>\n\n"
+                f"Выберите криптовалюту:",
             parse_mode="HTML",
             reply_markup=crypto_currency_kb(amount)
         )
@@ -121,7 +121,7 @@ async def amount_selected(call: CallbackQuery):
 
 async def _create_lolz_payment(call: CallbackQuery, amount: int):
     await call.message.edit_text(
-        f"\U0001f4ab <b>Создаём счёт...</b>",
+        f"<b>Создаём счёт...</b>",
         parse_mode="HTML"
     )
 
@@ -140,10 +140,10 @@ async def _create_lolz_payment(call: CallbackQuery, amount: int):
 
     if not invoice:
         await call.message.edit_text(
-            f"{CROSS} <b>Ошибка создания счёта</b>\n\nПопробуйте позже.",
+            f"<b>Ошибка создания счёта</b>\n\nПопробуйте позже.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="topup")]
+                [InlineKeyboardButton(text="Назад", callback_data="topup")]
             ])
         )
         return
@@ -157,14 +157,14 @@ async def _create_lolz_payment(call: CallbackQuery, amount: int):
     )
 
     await call.message.edit_text(
-        f"{LOLZ} <b>Счёт создан!</b>\n\n"
+        f"<b>Счёт создан!</b>\n\n"
         f"Сумма: <b>{amount} \u20bd</b>\n"
         f"Действителен 1 час.\n\n"
         f"После оплаты баланс пополнится автоматически.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=f"{LOLZ} Оплатить на Lolz", url=invoice["url"])],
-            [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="topup")]
+            [InlineKeyboardButton(text="Оплатить на Lolz", url=invoice["url"])],
+            [InlineKeyboardButton(text="Назад", callback_data="topup")]
         ])
     )
 
@@ -175,7 +175,7 @@ async def crypto_pay(call: CallbackQuery):
     amount = int(amount_str)
 
     await call.message.edit_text(
-        f"\U0001f4ab <b>Создаём счёт в CryptoBot...</b>",
+        f"<b>Создаём счёт в CryptoBot...</b>",
         parse_mode="HTML"
     )
 
@@ -191,10 +191,10 @@ async def crypto_pay(call: CallbackQuery):
 
     if not invoice:
         await call.message.edit_text(
-            f"{CROSS} <b>Ошибка создания счёта</b>\n\nПопробуйте позже.",
+            f"<b>Ошибка создания счёта</b>\n\nПопробуйте позже.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="pay_crypto")]
+                [InlineKeyboardButton(text="Назад", callback_data="pay_crypto")]
             ])
         )
         return
@@ -211,14 +211,14 @@ async def crypto_pay(call: CallbackQuery):
     cur_emoji = emoji_map.get(currency, "\U0001f48e")
 
     await call.message.edit_text(
-        f"{cur_emoji} <b>Счёт создан!</b>\n\n"
+        f"<b>Счёт создан!</b>\n\n"
         f"Сумма: <b>{amount} \u20bd</b>\n"
         f"Валюта: <b>{currency}</b>\n"
         f"Действителен 1 час.\n\n"
         f"После оплаты баланс пополнится автоматически.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=f"\U0001f48e Оплатить в CryptoBot", url=invoice.bot_invoice_url)],
-            [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="topup")]
+            [InlineKeyboardButton(text="Оплатить в CryptoBot", url=invoice.bot_invoice_url)],
+            [InlineKeyboardButton(text="Назад", callback_data="topup")]
         ])
     )

@@ -1,7 +1,9 @@
 import csv
 import io
+import json
 import logging
 import os
+from datetime import datetime, timedelta
 from aiohttp import web
 import aiohttp_jinja2
 import jinja2
@@ -324,6 +326,50 @@ async def settings_page(request):
     }
 
 
+async def api_revenue(request):
+    if not check_auth(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    days = int(request.rel_url.query.get("days", "30"))
+    labels = []
+    values = []
+    for i in range(days - 1, -1, -1):
+        d = datetime.utcnow() - timedelta(days=i)
+        labels.append(d.strftime("%d %b"))
+        values.append(0)
+    try:
+        subs = await get_all_subscriptions()
+        for s in subs:
+            if s.get("started_at"):
+                started = datetime.fromisoformat(s["started_at"])
+                delta = (datetime.utcnow() - started).days
+                if 0 <= delta < days:
+                    idx = days - 1 - delta
+                    values[idx] += config.PRICE_RUB
+    except Exception:
+        pass
+    return web.json_response({"labels": labels, "values": values})
+
+
+async def api_subs(request):
+    if not check_auth(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    days = int(request.rel_url.query.get("days", "30"))
+    labels = []
+    values = []
+    for i in range(days - 1, -1, -1):
+        d = datetime.utcnow() - timedelta(days=i)
+        labels.append(d.strftime("%d %b"))
+        values.append(0)
+    try:
+        subs = await get_all_subscriptions()
+        active_count = len([s for s in subs if s.get("is_active")])
+        for i in range(days):
+            values[i] = active_count
+    except Exception:
+        pass
+    return web.json_response({"labels": labels, "values": values})
+
+
 def create_web_app() -> web.Application:
     app = web.Application()
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(TEMPLATES_DIR))
@@ -344,6 +390,10 @@ def create_web_app() -> web.Application:
     app.router.add_post("/admin/users/add_balance", add_balance_handler)
     app.router.add_get("/admin/users/export", export_users_csv)
     app.router.add_get("/admin/settings", settings_page)
+
+    # API endpoints for dashboard charts
+    app.router.add_get("/admin/api/revenue", api_revenue)
+    app.router.add_get("/admin/api/subs", api_subs)
 
     # Static files
     if os.path.exists(STATIC_DIR):

@@ -1,59 +1,96 @@
 {% extends "base.html" %}
 {% set active = "settings" %}
+{% from "_icons.html" import icon %}
 
-{% block title %}Настройки — VPN Admin{% endblock %}
+{% block title %}Settings — VPN Admin{% endblock %}
+
+{% block breadcrumbs %}
+<span class="current">Settings</span>
+{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>⚙️ Настройки</h1>
+    <h1 class="page-title">Settings</h1>
 </div>
 
 <div class="settings-grid">
-    <div class="info-card">
-        <h3>💎 Подписка</h3>
-        <div class="setting-row">
-            <span>Цена:</span>
-            <strong>{{ price }} ₽ / месяц</strong>
+    <div class="settings-card">
+        <div class="settings-card-header">
+            {{ icon('credit-card', 20) }}
+            <h3>Subscription</h3>
         </div>
-        <div class="setting-row">
-            <span>Протокол:</span>
-            <strong>VLESS + XTLS-Reality</strong>
+        <div class="settings-row">
+            <div class="settings-row-label">Price</div>
+            <div class="settings-row-value mono">{{ price }} &#8381; / month</div>
         </div>
-    </div>
-
-    <div class="info-card">
-        <h3>📢 Канал</h3>
-        <div class="setting-row">
-            <span>Обязательная подписка:</span>
-            <strong>{{ channel if channel else 'Не настроен' }}</strong>
+        <div class="settings-row">
+            <div class="settings-row-label">Protocol</div>
+            <div class="settings-row-value">VLESS + XTLS-Reality</div>
         </div>
     </div>
 
-    <div class="info-card">
-        <h3>💳 Платёжные системы</h3>
-        <div class="setting-row">
-            <span>CryptoBot:</span>
-            {% if cryptopay %}
-            <span class="badge badge-ok">✅ Настроен</span>
-            {% else %}
-            <span class="badge badge-err">❌ Не настроен</span>
-            {% endif %}
+    <div class="settings-card">
+        <div class="settings-card-header">
+            {{ icon('globe', 20) }}
+            <h3>Channel</h3>
         </div>
-        <div class="setting-row">
-            <span>Lolz.live:</span>
-            {% if lolz %}
-            <span class="badge badge-ok">✅ Настроен</span>
-            {% else %}
-            <span class="badge badge-err">❌ Не настроен</span>
-            {% endif %}
+        <div class="settings-row">
+            <div class="settings-row-label">Required subscription</div>
+            <div class="settings-row-value">
+                {% if channel %}
+                <code class="mono">{{ channel }}</code>
+                {% else %}
+                <span class="text-dim">Not configured</span>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    <div class="info-card">
-        <h3>📝 Как настроить</h3>
-        <p>Настройки находятся в файле <code>/opt/vpnbot/.env</code></p>
-        <p>После изменений перезапустите бот:</p>
-        <code>systemctl restart vpnbot</code>
+    <div class="settings-card">
+        <div class="settings-card-header">
+            {{ icon('wallet', 20) }}
+            <h3>Payment Systems</h3>
+        </div>
+        <div class="settings-row">
+            <div class="settings-row-label">CryptoBot</div>
+            <div class="settings-row-value">
+                {% if cryptopay %}
+                <span class="badge badge-success">{{ icon('check', 12) }} Connected</span>
+                {% else %}
+                <span class="badge badge-danger">{{ icon('x', 12) }} Not configured</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="settings-row">
+            <div class="settings-row-label">Lolz.live</div>
+            <div class="settings-row-value">
+                {% if lolz %}
+                <span class="badge badge-success">{{ icon('check', 12) }} Connected</span>
+                {% else %}
+                <span class="badge badge-danger">{{ icon('x', 12) }} Not configured</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-card">
+        <div class="settings-card-header">
+            {{ icon('terminal', 20) }}
+            <h3>Configuration</h3>
+        </div>
+        <div class="settings-row">
+            <div class="settings-row-label">Config file</div>
+            <div class="settings-row-value"><code class="mono">/opt/vpnbot/.env</code></div>
+        </div>
+        <div class="settings-row">
+            <div class="settings-row-label">Restart command</div>
+            <div class="settings-row-value">
+                <code class="mono">systemctl restart vpnbot</code>
+                <button class="btn-icon" onclick="copyText('systemctl restart vpnbot', this)" title="Copy">
+                    {{ icon('copy', 14) }}
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

@@ -1,23 +1,34 @@
 {% extends "base.html" %}
 {% set active = "users" %}
+{% from "_icons.html" import icon %}
 
-{% block title %}Пользователи — VPN Admin{% endblock %}
+{% block title %}Users — VPN Admin{% endblock %}
+
+{% block breadcrumbs %}
+<span class="current">Users</span>
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="/admin/users/export" class="btn btn-ghost btn-sm">
+    {{ icon('download', 16) }} Export CSV
+</a>
+{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>👥 Пользователи</h1>
-    <div style="display:flex;gap:10px;align-items:center;">
-        <a href="/admin/users/export" class="btn btn-outline" style="font-size:0.85rem;">📥 Экспорт CSV</a>
-    </div>
+    <h1 class="page-title">Users</h1>
+    <span class="text-muted">{{ users|length }} total</span>
 </div>
 
-<div class="card" style="margin-bottom:20px;padding:16px;">
-    <form method="get" action="/admin/users" style="display:flex;gap:10px;align-items:center;">
-        <input type="text" name="q" value="{{ query or '' }}" placeholder="Поиск по ID, имени или username..."
-               class="form-input" style="flex:1;">
-        <button type="submit" class="btn btn-primary" style="padding:10px 20px;">🔍 Найти</button>
+<div class="card search-bar">
+    <form method="get" action="/admin/users" class="search-form">
+        <div class="search-input-wrap">
+            {{ icon('search', 16) }}
+            <input type="text" name="q" value="{{ query or '' }}" placeholder="Search by ID, name or username..." class="search-input">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Search</button>
         {% if query %}
-        <a href="/admin/users" class="btn btn-outline" style="padding:10px 20px;">✕ Сброс</a>
+        <a href="/admin/users" class="btn btn-ghost btn-sm">Clear</a>
         {% endif %}
     </form>
 </div>
@@ -27,66 +38,84 @@
     <table>
         <thead>
             <tr>
+                <th>User</th>
                 <th>Telegram ID</th>
-                <th>Имя</th>
-                <th>Username</th>
-                <th>Баланс</th>
-                <th>Трафик ↓/↑</th>
-                <th>Подписка</th>
-                <th>Регистрация</th>
-                <th>Действия</th>
+                <th>Balance</th>
+                <th>Traffic</th>
+                <th>Subscription</th>
+                <th>Registered</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for u in users %}
             <tr>
-                <td><code>{{ u.user_id }}</code></td>
-                <td>{{ u.first_name or '—' }}</td>
-                <td>{{ ('@' + u.username) if u.username else '—' }}</td>
-                <td>{{ "%.0f"|format(u.balance) }} ₽</td>
+                <td>
+                    <div class="user-cell">
+                        <div class="avatar">{{ (u.first_name or 'U')[0] }}</div>
+                        <div class="user-cell-info">
+                            <div class="user-cell-name">{{ u.first_name or '—' }}</div>
+                            <div class="user-cell-sub">{{ ('@' + u.username) if u.username else '—' }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <code class="mono">{{ u.user_id }}</code>
+                    <button class="btn-icon" onclick="copyText('{{ u.user_id }}', this)" title="Copy">
+                        {{ icon('copy', 14) }}
+                    </button>
+                </td>
+                <td><span class="mono">{{ "%.0f"|format(u.balance) }} &#8381;</span></td>
                 <td>
                     {% set dl_mb = (u.download / 1048576)|round(1) %}
                     {% set ul_mb = (u.upload / 1048576)|round(1) %}
                     {% if dl_mb > 0 or ul_mb > 0 %}
-                    <span style="color:#60a5fa;">↓{{ dl_mb }} MB</span> /
-                    <span style="color:#a78bfa;">↑{{ ul_mb }} MB</span>
+                    <div class="traffic-cell">
+                        <span class="traffic-down">{{ icon('arrow-down', 12) }} {{ dl_mb }} MB</span>
+                        <span class="traffic-up">{{ icon('arrow-up', 12) }} {{ ul_mb }} MB</span>
+                    </div>
                     {% else %}
-                    <span style="color:#666;">0</span>
+                    <span class="text-dim">0</span>
                     {% endif %}
                 </td>
                 <td>
                     {% if u.has_sub %}
-                    <span class="badge badge-ok">до {{ u.sub_expires }}</span>
+                    <span class="badge badge-success">until {{ u.sub_expires }}</span>
                     {% else %}
-                    <span class="badge badge-err">Нет</span>
+                    <span class="badge badge-danger">None</span>
                     {% endif %}
                 </td>
-                <td>{{ u.created_at[:10] if u.created_at else '—' }}</td>
+                <td class="text-muted">{{ u.created_at[:10] if u.created_at else '—' }}</td>
                 <td>
-                    <form method="post" action="/admin/users/add_balance" style="display:flex;gap:4px;align-items:center;">
-                        <input type="hidden" name="user_id" value="{{ u.user_id }}">
-                        <input type="number" name="amount" placeholder="₽" step="1"
-                               class="form-input" style="width:80px;padding:4px 8px;font-size:0.8rem;">
-                        <button type="submit" class="btn btn-primary" style="padding:4px 10px;font-size:0.8rem;">💰</button>
-                    </form>
+                    <div class="dropdown">
+                        <button class="btn-icon" onclick="toggleDropdown(this)">
+                            {{ icon('more-horizontal', 16) }}
+                        </button>
+                        <div class="dropdown-menu">
+                            <form method="post" action="/admin/users/add_balance" class="dropdown-form">
+                                <input type="hidden" name="user_id" value="{{ u.user_id }}">
+                                <input type="number" name="amount" placeholder="Amount ₽" step="1" class="dropdown-input">
+                                <button type="submit" class="dropdown-item">
+                                    {{ icon('wallet', 14) }} Add balance
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
-<div style="margin-top:10px;color:#888;font-size:0.85rem;">
-    Всего: {{ users|length }} пользователей
-</div>
 {% else %}
 <div class="empty-state">
-    <div class="empty-icon">👥</div>
+    {{ icon('users', 48) }}
     {% if query %}
-    <h3>Ничего не найдено</h3>
-    <p>Нет пользователей по запросу «{{ query }}»</p>
+    <h3>No results</h3>
+    <p>No users found for "{{ query }}"</p>
     {% else %}
-    <h3>Нет пользователей</h3>
-    <p>Пользователи появятся когда начнут использовать бот</p>
+    <h3>No users yet</h3>
+    <p>Users will appear when they start using the bot</p>
     {% endif %}
 </div>
 {% endif %}

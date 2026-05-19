@@ -44,12 +44,12 @@ class AddBalanceState(StatesGroup):
 
 def admin_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=f"{STATS} Статистика", callback_data="adm_stats")],
-        [InlineKeyboardButton(text=f"{GLOBE} Серверы", callback_data="adm_servers")],
-        [InlineKeyboardButton(text="\U0001f464 Пользователи", callback_data="adm_users")],
-        [InlineKeyboardButton(text=f"{KEY} Подписки", callback_data="adm_subs")],
-        [InlineKeyboardButton(text=f"{BELL} Рассылка", callback_data="adm_broadcast")],
-        [InlineKeyboardButton(text="\U0001f4b0 Начислить баланс", callback_data="adm_add_balance")],
+        [InlineKeyboardButton(text="Статистика", callback_data="adm_stats")],
+        [InlineKeyboardButton(text="Серверы", callback_data="adm_servers")],
+        [InlineKeyboardButton(text="Пользователи", callback_data="adm_users")],
+        [InlineKeyboardButton(text="Подписки", callback_data="adm_subs")],
+        [InlineKeyboardButton(text="Рассылка", callback_data="adm_broadcast")],
+        [InlineKeyboardButton(text="Начислить баланс", callback_data="adm_add_balance")],
     ])
 
 
@@ -64,10 +64,10 @@ async def cmd_admin(message: Message):
     revenue = await get_total_revenue()
 
     await message.answer(
-        f"{STATS} <b>Панель администратора</b>\n\n"
-        f"\U0001f464 Пользователей: <b>{users}</b>\n"
-        f"{KEY} Активных подписок: <b>{subs}</b>\n"
-        f"\U0001f4b0 Доход: <b>{revenue:.0f} \u20bd</b>",
+        f"<b>Панель администратора</b>\n\n"
+        f"Пользователей: <b>{users}</b>\n"
+        f"Активных подписок: <b>{subs}</b>\n"
+        f"Доход: <b>{revenue:.0f} \u20bd</b>",
         parse_mode="HTML",
         reply_markup=admin_kb()
     )
@@ -81,10 +81,10 @@ async def adm_back(call: CallbackQuery):
     subs = await get_active_sub_count()
     revenue = await get_total_revenue()
     await call.message.edit_text(
-        f"{STATS} <b>Панель администратора</b>\n\n"
-        f"\U0001f464 Пользователей: <b>{users}</b>\n"
-        f"{KEY} Активных подписок: <b>{subs}</b>\n"
-        f"\U0001f4b0 Доход: <b>{revenue:.0f} \u20bd</b>",
+        f"<b>Панель администратора</b>\n\n"
+        f"Пользователей: <b>{users}</b>\n"
+        f"Активных подписок: <b>{subs}</b>\n"
+        f"Доход: <b>{revenue:.0f} \u20bd</b>",
         parse_mode="HTML",
         reply_markup=admin_kb()
     )
@@ -102,15 +102,15 @@ async def adm_stats(call: CallbackQuery):
     active_servers = [s for s in servers if s["is_active"]]
 
     await call.message.edit_text(
-        f"{STATS} <b>Подробная статистика</b>\n\n"
-        f"\U0001f464 Пользователей: <b>{users}</b>\n"
-        f"{KEY} Активных подписок: <b>{subs}</b>\n"
-        f"\U0001f4b0 Доход: <b>{revenue:.0f} \u20bd</b>\n"
-        f"{GLOBE} Серверов: <b>{len(active_servers)}/{len(servers)}</b>\n"
-        f"\U0001f4b2 Цена подписки: <b>{config.PRICE_RUB} \u20bd</b>",
+        f"<b>Подробная статистика</b>\n\n"
+        f"Пользователей: <b>{users}</b>\n"
+        f"Активных подписок: <b>{subs}</b>\n"
+        f"Доход: <b>{revenue:.0f} \u20bd</b>\n"
+        f"Серверов: <b>{len(active_servers)}/{len(servers)}</b>\n"
+        f"Цена подписки: <b>{config.PRICE_RUB} \u20bd</b>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="adm_back")]
+            [InlineKeyboardButton(text="Назад", callback_data="adm_back")]
         ])
     )
 
@@ -123,7 +123,7 @@ async def adm_servers(call: CallbackQuery):
         return
     servers = await get_all_servers()
 
-    lines = [f"{GLOBE} <b>Серверы ({len(servers)})</b>\n"]
+    lines = [f"<b>Серверы ({len(servers)})</b>\n"]
     for s in servers:
         from emoji import flag
         f = flag(s["country_code"]) if s["country_code"] else "\U0001f3f3\ufe0f"
@@ -134,8 +134,8 @@ async def adm_servers(call: CallbackQuery):
         lines.append(f"{status} {f} <b>{name}</b>{relay}\n   {s['ip']} | Xray: {xray}")
 
     buttons = [
-        [InlineKeyboardButton(text=f"\u2795 Добавить VPN сервер", callback_data="adm_add_server")],
-        [InlineKeyboardButton(text=f"\U0001f1f7\U0001f1fa Добавить Relay (whitelist)", callback_data="adm_add_relay")],
+        [InlineKeyboardButton(text="Добавить VPN сервер", callback_data="adm_add_server")],
+        [InlineKeyboardButton(text="Добавить Relay (whitelist)", callback_data="adm_add_relay")],
     ]
 
     for s in servers:
@@ -145,10 +145,10 @@ async def adm_servers(call: CallbackQuery):
             f = flag(s["country_code"]) + " "
         name = s["display_name"] or s["ip"]
         buttons.append([
-            InlineKeyboardButton(text=f"\u2699\ufe0f {f}{name}", callback_data=f"adm_srv:{s['id']}")
+            InlineKeyboardButton(text=f"{f}{name}", callback_data=f"adm_srv:{s['id']}")
         ])
 
-    buttons.append([InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="adm_back")])
+    buttons.append([InlineKeyboardButton(text="Назад", callback_data="adm_back")])
 
     await call.message.edit_text(
         "\n".join(lines) if servers else f"{GLOBE} <b>Серверы</b>\n\nПока нет серверов.",
@@ -192,13 +192,13 @@ async def adm_server_detail(call: CallbackQuery):
 
     buttons = []
     if not s["xray_uuid"] and not s["is_relay"]:
-        buttons.append([InlineKeyboardButton(text="\U0001f680 Установить Xray", callback_data=f"adm_setup_xray:{server_id}")])
+        buttons.append([InlineKeyboardButton(text="Установить Xray", callback_data=f"adm_setup_xray:{server_id}")])
     if s["is_active"]:
-        buttons.append([InlineKeyboardButton(text="\U0001f534 Отключить", callback_data=f"adm_toggle:{server_id}:0")])
+        buttons.append([InlineKeyboardButton(text="Отключить", callback_data=f"adm_toggle:{server_id}:0")])
     else:
-        buttons.append([InlineKeyboardButton(text="\U0001f7e2 Включить", callback_data=f"adm_toggle:{server_id}:1")])
-    buttons.append([InlineKeyboardButton(text="\U0001f5d1\ufe0f Удалить", callback_data=f"adm_del_srv:{server_id}")])
-    buttons.append([InlineKeyboardButton(text="\u25c0\ufe0f Серверы", callback_data="adm_servers")])
+        buttons.append([InlineKeyboardButton(text="Включить", callback_data=f"adm_toggle:{server_id}:1")])
+    buttons.append([InlineKeyboardButton(text="Удалить", callback_data=f"adm_del_srv:{server_id}")])
+    buttons.append([InlineKeyboardButton(text="Серверы", callback_data="adm_servers")])
 
     await call.message.edit_text(text, parse_mode="HTML",
                                   reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
@@ -233,7 +233,7 @@ async def adm_add_server_start(call: CallbackQuery, state: FSMContext):
     if not config.is_admin(call.from_user.id):
         return
     await call.message.edit_text(
-        f"{GLOBE} <b>Добавление VPN сервера</b>\n\n"
+        f"<b>Добавление VPN сервера</b>\n\n"
         f"Введите IP-адрес сервера:",
         parse_mode="HTML"
     )
@@ -402,7 +402,7 @@ async def adm_setup_xray(call: CallbackQuery):
         return
 
     await call.message.edit_text(
-        f"\U0001f680 <b>Устанавливаю Xray...</b>\n\n"
+        f"<b>Устанавливаю Xray...</b>\n\n"
         f"IP: {s['ip']}\nЭто займёт 1-3 минуты...",
         parse_mode="HTML"
     )
@@ -414,8 +414,8 @@ async def adm_setup_xray(call: CallbackQuery):
             f"{CROSS} <b>Ошибка: {result['error']}</b>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="\U0001f504 Повторить", callback_data=f"adm_setup_xray:{server_id}")],
-                [InlineKeyboardButton(text="\u25c0\ufe0f Серверы", callback_data="adm_servers")]
+                [InlineKeyboardButton(text="Повторить", callback_data=f"adm_setup_xray:{server_id}")],
+                [InlineKeyboardButton(text="Серверы", callback_data="adm_servers")]
             ])
         )
         return
@@ -436,7 +436,7 @@ async def adm_setup_xray(call: CallbackQuery):
         f"Port: {result['port']}",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="\u25c0\ufe0f Серверы", callback_data="adm_servers")]
+            [InlineKeyboardButton(text="Серверы", callback_data="adm_servers")]
         ])
     )
 
@@ -463,10 +463,10 @@ async def adm_add_relay_start(call: CallbackQuery, state: FSMContext):
         buttons.append([InlineKeyboardButton(
             text=f"{f} {name}", callback_data=f"adm_relay_target:{s['id']}"
         )])
-    buttons.append([InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="adm_servers")])
+    buttons.append([InlineKeyboardButton(text="Назад", callback_data="adm_servers")])
 
     await call.message.edit_text(
-        f"\U0001f1f7\U0001f1fa <b>Добавление Relay сервера</b>\n\n"
+        f"<b>Добавление Relay сервера</b>\n\n"
         f"Relay перенаправляет трафик через российский IP (белый список) "
         f"на VPN сервер за рубежом.\n\n"
         f"Выберите целевой VPN сервер:",
@@ -482,7 +482,7 @@ async def adm_relay_target(call: CallbackQuery, state: FSMContext):
     target_id = int(call.data.split(":")[1])
     await state.update_data(is_relay=True, relay_target_id=target_id)
     await call.message.edit_text(
-        f"\U0001f1f7\U0001f1fa <b>Relay сервер</b>\n\n"
+        f"<b>Relay сервер</b>\n\n"
         f"Введите IP российского сервера (с белым списком):",
         parse_mode="HTML"
     )
@@ -497,7 +497,7 @@ async def adm_users(call: CallbackQuery):
         return
     users = await get_all_users()
 
-    lines = [f"\U0001f464 <b>Пользователи ({len(users)})</b>\n"]
+    lines = [f"<b>Пользователи ({len(users)})</b>\n"]
     for u in list(users)[:30]:
         name = u["first_name"] or "\u2014"
         uname = f"@{u['username']}" if u["username"] else "\u2014"
@@ -510,7 +510,7 @@ async def adm_users(call: CallbackQuery):
         "\n".join(lines),
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="adm_back")]
+            [InlineKeyboardButton(text="Назад", callback_data="adm_back")]
         ])
     )
 
@@ -525,7 +525,7 @@ async def adm_subs(call: CallbackQuery):
     subs = await get_all_subscriptions()
     active = [s for s in subs if s["is_active"]]
 
-    lines = [f"{KEY} <b>Активные подписки ({len(active)})</b>\n"]
+    lines = [f"<b>Активные подписки ({len(active)})</b>\n"]
     for s in list(active)[:20]:
         name = s["first_name"] or "\u2014"
         expires = s["expires_at"][:10]
@@ -536,7 +536,7 @@ async def adm_subs(call: CallbackQuery):
         "\n".join(lines),
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="adm_back")]
+            [InlineKeyboardButton(text="Назад", callback_data="adm_back")]
         ])
     )
 
@@ -548,10 +548,9 @@ async def adm_broadcast_start(call: CallbackQuery, state: FSMContext):
     if not config.is_admin(call.from_user.id):
         return
     await call.message.edit_text(
-        f"{BELL} <b>Рассылка</b>\n\n"
+        f"<b>Рассылка</b>\n\n"
         f"Отправьте сообщение для рассылки.\n"
-        f"Поддерживается: текст, фото, видео.\n"
-        f"Premium эмодзи будут сохранены.\n\n"
+        f"Поддерживается: текст, фото, видео.\n\n"
         f"Для отмены: /admin",
         parse_mode="HTML"
     )
@@ -604,7 +603,7 @@ async def adm_add_balance_start(call: CallbackQuery, state: FSMContext):
     if not config.is_admin(call.from_user.id):
         return
     await call.message.edit_text(
-        f"\U0001f4b0 <b>Начислить баланс</b>\n\n"
+        f"<b>Начислить баланс</b>\n\n"
         f"Введите Telegram ID пользователя:",
         parse_mode="HTML"
     )
@@ -646,11 +645,10 @@ async def add_balance_amount(message: Message, state: FSMContext, bot: Bot):
     )
 
     try:
-        from emoji import ARROW_UP, MONEY
         await bot.send_message(
             uid,
-            f"{ARROW_UP} <b>Баланс пополнен!</b>\n\n"
-            f"{MONEY} Зачислено: <b>+{amount:.0f} \u20bd</b>\n"
+            f"<b>Баланс пополнен!</b>\n\n"
+            f"Зачислено: <b>+{amount:.0f} \u20bd</b>\n"
             f"Способ: начисление администратором",
             parse_mode="HTML"
         )

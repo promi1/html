@@ -43,11 +43,11 @@ async def buy_vpn(call: CallbackQuery):
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
-            text=f"{CHECK} Купить за {price} \u20bd с баланса",
+            text=f"Купить за {price} \u20bd с баланса",
             callback_data="confirm_buy"
         )],
-        [InlineKeyboardButton(text=f"{ARROW_UP} Пополнить баланс", callback_data="topup")],
-        [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="main_menu")]
+        [InlineKeyboardButton(text="Пополнить баланс", callback_data="topup")],
+        [InlineKeyboardButton(text="Назад", callback_data="main_menu")]
     ])
 
     status = ""
@@ -60,13 +60,13 @@ async def buy_vpn(call: CallbackQuery):
         )
 
     await call.message.edit_text(
-        f"{ROCKET} <b>Купить VPN-подписку</b>\n\n"
-        f"{MONEY} Цена: <b>{price} \u20bd / месяц</b>\n"
-        f"{INFO} Ваш баланс: <b>{balance:.0f} \u20bd</b>\n"
+        f"<b>Купить VPN-подписку</b>\n\n"
+        f"Цена: <b>{price} \u20bd / месяц</b>\n"
+        f"Ваш баланс: <b>{balance:.0f} \u20bd</b>\n"
         f"{status}\n"
-        f"{GLOBE} <b>Доступные серверы:</b>\n"
+        f"<b>Доступные серверы:</b>\n"
         f"{servers_text}\n\n"
-        f"{SHIELD} Все серверы включены в подписку.",
+        f"Все серверы включены в подписку.",
         parse_mode="HTML",
         reply_markup=kb
     )
@@ -90,12 +90,12 @@ async def confirm_buy(call: CallbackQuery):
         success = await deduct_balance(user_id, price)
         if not success:
             await call.message.edit_text(
-                f"{CROSS} <b>Недостаточно средств!</b>\n\n"
+                f"<b>Недостаточно средств!</b>\n\n"
                 f"Пополните баланс и попробуйте снова.",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text=f"{ARROW_UP} Пополнить", callback_data="topup")],
-                    [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="buy_vpn")]
+                    [InlineKeyboardButton(text="Пополнить", callback_data="topup")],
+                    [InlineKeyboardButton(text="Назад", callback_data="buy_vpn")]
                 ])
             )
             return
@@ -103,13 +103,13 @@ async def confirm_buy(call: CallbackQuery):
         await renew_subscription(existing["id"], new_expires.isoformat())
 
         await call.message.edit_text(
-            f"{CHECK} <b>Подписка продлена!</b>\n\n"
+            f"<b>Подписка продлена!</b>\n\n"
             f"Действует до: <b>{new_expires.strftime('%d.%m.%Y')}</b>\n\n"
             f"Ваша ссылка подписки не изменилась.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=f"{KEY} Мои ключи", callback_data="my_keys")],
-                [InlineKeyboardButton(text="\u25c0\ufe0f В меню", callback_data="main_menu")]
+                [InlineKeyboardButton(text="Мои ключи", callback_data="my_keys")],
+                [InlineKeyboardButton(text="Назад", callback_data="main_menu")]
             ])
         )
         return
@@ -118,12 +118,12 @@ async def confirm_buy(call: CallbackQuery):
     success = await deduct_balance(user_id, price)
     if not success:
         await call.message.edit_text(
-            f"{CROSS} <b>Недостаточно средств!</b>\n\n"
+            f"<b>Недостаточно средств!</b>\n\n"
             f"Пополните баланс и попробуйте снова.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=f"{ARROW_UP} Пополнить", callback_data="topup")],
-                [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="buy_vpn")]
+                [InlineKeyboardButton(text="Пополнить", callback_data="topup")],
+                [InlineKeyboardButton(text="Назад", callback_data="buy_vpn")]
             ])
         )
         return
@@ -144,19 +144,19 @@ async def confirm_buy(call: CallbackQuery):
     sub_url = get_sub_url(sub_token)
 
     await call.message.edit_text(
-        f"{CHECK} <b>Подписка активирована!</b>\n\n"
+        f"<b>Подписка активирована!</b>\n\n"
         f"Действует до: <b>{expires.strftime('%d.%m.%Y')}</b>\n\n"
-        f"{KEY} <b>Ваша ссылка подписки:</b>\n"
+        f"<b>Ваша ссылка подписки:</b>\n"
         f"<code>{sub_url}</code>\n\n"
-        f"\U0001f4f1 Вставьте ссылку в приложение:\n"
+        f"Вставьте ссылку в приложение:\n"
         f"\u2022 <b>Happ</b> (iOS/Android)\n"
         f"\u2022 <b>v2rayN</b> (Windows)\n"
         f"\u2022 <b>Hiddify</b> (все платформы)\n\n"
-        f"{BELL} Напомним за 3 дня до окончания.",
+        f"Напомним за 3 дня до окончания.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=f"{GLOBE} Туториалы", callback_data="tutorials")],
-            [InlineKeyboardButton(text="\u25c0\ufe0f В меню", callback_data="main_menu")]
+            [InlineKeyboardButton(text="Туториалы", callback_data="tutorials")],
+            [InlineKeyboardButton(text="Назад", callback_data="main_menu")]
         ])
     )
 
@@ -167,12 +167,12 @@ async def my_keys(call: CallbackQuery):
 
     if not sub:
         await call.message.edit_text(
-            f"{STOP} <b>У вас нет активной подписки</b>\n\n"
+            f"<b>У вас нет активной подписки</b>\n\n"
             f"Купите VPN в главном меню.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=f"{ROCKET} Купить VPN", callback_data="buy_vpn")],
-                [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="main_menu")]
+                [InlineKeyboardButton(text="Купить VPN", callback_data="buy_vpn")],
+                [InlineKeyboardButton(text="Назад", callback_data="main_menu")]
             ])
         )
         return
@@ -201,18 +201,18 @@ async def my_keys(call: CallbackQuery):
     servers_text = "\n".join(server_lines) if server_lines else "  \u26a0\ufe0f Нет серверов"
 
     await call.message.edit_text(
-        f"{KEY} <b>Ваша подписка</b>\n\n"
-        f"\U0001f7e2 <b>Статус:</b> Активна\n"
-        f"\u23f3 <b>До:</b> {expires.strftime('%d.%m.%Y %H:%M')} UTC ({days_left} дн.)\n\n"
-        f"{GLOBE} <b>Серверы в подписке:</b>\n"
+        f"<b>Ваша подписка</b>\n\n"
+        f"<b>Статус:</b> Активна\n"
+        f"<b>До:</b> {expires.strftime('%d.%m.%Y %H:%M')} UTC ({days_left} дн.)\n\n"
+        f"<b>Серверы в подписке:</b>\n"
         f"{servers_text}\n\n"
-        f"{KEY} <b>Ссылка подписки:</b>\n"
+        f"<b>Ссылка подписки:</b>\n"
         f"<code>{sub_url}</code>\n\n"
-        f"\U0001f4cb Скопируйте и вставьте в приложение.",
+        f"Скопируйте и вставьте в приложение.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=f"{MONEY} Продлить (+30 дней)", callback_data="confirm_buy")],
-            [InlineKeyboardButton(text=f"{GLOBE} Туториалы", callback_data="tutorials")],
-            [InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="main_menu")]
+            [InlineKeyboardButton(text="Продлить (+30 дней)", callback_data="confirm_buy")],
+            [InlineKeyboardButton(text="Туториалы", callback_data="tutorials")],
+            [InlineKeyboardButton(text="Назад", callback_data="main_menu")]
         ])
     )
