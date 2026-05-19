@@ -55,8 +55,15 @@
             </div>
             <div class="form-group">
                 <label class="form-label">SSH Key (private, for Yandex Cloud etc.)</label>
-                <textarea name="ssh_key" rows="4" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----" class="form-input form-textarea mono"></textarea>
-                <div class="form-hint">Paste private SSH key if server doesn't accept password</div>
+                <div class="ssh-key-upload">
+                    <input type="file" name="ssh_key_file" id="ssh_key_file" accept=".zip,.pem,.key,.pub," class="file-input-hidden" onchange="handleKeyFile(this)">
+                    <label for="ssh_key_file" class="btn btn-ghost btn-sm file-upload-btn" id="fileLabel">
+                        {{ icon('upload', 16) }} Upload key file (.zip / .pem)
+                    </label>
+                    <span class="file-name" id="fileName"></span>
+                </div>
+                <textarea name="ssh_key" id="ssh_key_text" rows="4" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----" class="form-input form-textarea mono" style="margin-top:8px"></textarea>
+                <div class="form-hint">Upload key archive or paste private SSH key if server doesn't accept password</div>
             </div>
         </div>
 
@@ -132,6 +139,59 @@ function toggleRelay() {
     var cb = document.getElementById('is_relay');
     var target = document.getElementById('relay_target_group');
     target.classList.toggle('visible', cb.checked);
+}
+
+function handleKeyFile(input) {
+    var file = input.files[0];
+    var nameEl = document.getElementById('fileName');
+    var textarea = document.getElementById('ssh_key_text');
+    if (!file) { nameEl.textContent = ''; return; }
+    nameEl.textContent = file.name;
+
+    if (file.name.endsWith('.zip')) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var JSZip = window.JSZip;
+            if (!JSZip) {
+                nameEl.textContent = file.name + ' (zip support loading...)';
+                var s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                s.onload = function() { processZip(e.target.result, textarea, nameEl, file.name); };
+                document.head.appendChild(s);
+            } else {
+                processZip(e.target.result, textarea, nameEl, file.name);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            textarea.value = e.target.result;
+            nameEl.textContent = file.name + ' \u2713';
+        };
+        reader.readAsText(file);
+    }
+}
+
+function processZip(data, textarea, nameEl, zipName) {
+    JSZip.loadAsync(data).then(function(zip) {
+        var found = false;
+        var promises = [];
+        zip.forEach(function(path, entry) {
+            if (!entry.dir && !path.endsWith('.pub') && !path.startsWith('__MACOSX')) {
+                promises.push(entry.async('string').then(function(content) {
+                    if (content.indexOf('PRIVATE KEY') !== -1) {
+                        textarea.value = content;
+                        nameEl.textContent = zipName + ' \u2192 ' + path + ' \u2713';
+                        found = true;
+                    }
+                }));
+            }
+        });
+        Promise.all(promises).then(function() {
+            if (!found) nameEl.textContent = zipName + ' (no private key found in archive)';
+        });
+    });
 }
 
 document.getElementById('addServerForm').addEventListener('submit', function(e) {

@@ -178,41 +178,69 @@ async def generate_xray_keys(ip: str, user: str, password: str, port: int = 22, 
 
 def build_xray_config(uuid_val: str, private_key: str, short_id: str,
                        sni: str = "www.google.com", xray_port: int = 443) -> str:
-    """Build Xray VLESS Reality config JSON."""
+    """Build Xray VLESS Reality config JSON with stats API enabled."""
     config = {
         "log": {"loglevel": "warning"},
-        "inbounds": [{
-            "listen": "0.0.0.0",
-            "port": xray_port,
-            "protocol": "vless",
-            "settings": {
-                "clients": [{
-                    "id": uuid_val,
-                    "flow": "xtls-rprx-vision"
-                }],
-                "decryption": "none"
+        "stats": {},
+        "api": {
+            "tag": "api",
+            "services": ["StatsService"]
+        },
+        "policy": {
+            "levels": {"0": {"statsUserUplink": True, "statsUserDownlink": True}},
+            "system": {"statsInboundUplink": True, "statsInboundDownlink": True,
+                       "statsOutboundUplink": True, "statsOutboundDownlink": True}
+        },
+        "inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "port": 10085,
+                "protocol": "dokodemo-door",
+                "settings": {"address": "127.0.0.1"},
+                "tag": "api"
             },
-            "streamSettings": {
-                "network": "tcp",
-                "security": "reality",
-                "realitySettings": {
-                    "show": False,
-                    "dest": f"{sni}:443",
-                    "xver": 0,
-                    "serverNames": [sni, f"www.{sni}" if not sni.startswith("www.") else sni],
-                    "privateKey": private_key,
-                    "shortIds": [short_id, ""]
+            {
+                "listen": "0.0.0.0",
+                "port": xray_port,
+                "protocol": "vless",
+                "tag": "vless-in",
+                "settings": {
+                    "clients": [{
+                        "id": uuid_val,
+                        "flow": "xtls-rprx-vision",
+                        "email": f"user-{uuid_val[:8]}"
+                    }],
+                    "decryption": "none"
+                },
+                "streamSettings": {
+                    "network": "tcp",
+                    "security": "reality",
+                    "realitySettings": {
+                        "show": False,
+                        "dest": f"{sni}:443",
+                        "xver": 0,
+                        "serverNames": [sni, f"www.{sni}" if not sni.startswith("www.") else sni],
+                        "privateKey": private_key,
+                        "shortIds": [short_id, ""]
+                    }
+                },
+                "sniffing": {
+                    "enabled": True,
+                    "destOverride": ["http", "tls", "quic"]
                 }
-            },
-            "sniffing": {
-                "enabled": True,
-                "destOverride": ["http", "tls", "quic"]
             }
-        }],
+        ],
         "outbounds": [
             {"protocol": "freedom", "tag": "direct"},
             {"protocol": "blackhole", "tag": "block"}
-        ]
+        ],
+        "routing": {
+            "rules": [{
+                "inboundTag": ["api"],
+                "outboundTag": "api",
+                "type": "field"
+            }]
+        }
     }
     return json.dumps(config, indent=2)
 
@@ -358,6 +386,45 @@ async def setup_relay(relay_ip: str, relay_user: str, relay_pass: str,
         return True
     logger.error(f"Relay setup failed: {stdout} | {stderr}")
     return False
+
+
+async def query_xray_stats(ip: str, user: str, password: str, ssh_port: int = 22,
+                            ssh_key: str = "", email: str = "") -> dict:
+    """Query Xray stats API for traffic data via SSH.
+    Returns {"uplink": bytes, "downlink": bytes} or empty dict on failure.
+    """
+    if email:
+        cmd = (
+            f"/usr/local/bin/xray api statsquery --server=127.0.0.1:10085 "
+            f"-pattern 'user>>>{email}>>>traffic' 2>/dev/null && echo STATS_OK"
+        )
+    else:
+        cmd = (
+            "/usr/local/bin/xray api statsquery --server=127.0.0.1:10085 "
+            "2>/dev/null && echo STATS_OK"
+        )
+    stdout, stderr, rc = await run_ssh_command(ip, user, password, cmd, ssh_port, timeout=15, ssh_key=ssh_key)
+    if "STATS_OK" not in stdout:
+        return {}
+
+    result = {"uplink": 0, "downlink": 0}
+    try:
+        for line in stdout.split("\n"):
+            line = line.strip()
+            if "uplink" in line.lower() and "value" not in line.lower():
+                continue
+            if '"value"' in line or "'value'" in line:
+                pass
+        import re
+        blocks = re.findall(r'"name":\s*"([^"]+)".*?"value":\s*"?(\d+)"?', stdout, re.DOTALL)
+        for name, value in blocks:
+            if "uplink" in name:
+                result["uplink"] += int(value)
+            elif "downlink" in name:
+                result["downlink"] += int(value)
+    except Exception as e:
+        logger.warning(f"Failed to parse Xray stats: {e}")
+    return result
 
 
 def build_vless_link(ip: str, port: int, uuid_val: str, public_key: str,

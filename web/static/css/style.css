@@ -424,6 +424,12 @@ tr:hover .copy-btn, .copy-wrap:hover .copy-btn { opacity: 1; }
 .form-input.mono { font-family: var(--mono); font-size: 12px; }
 .form-textarea { resize: vertical; min-height: 80px; font-family: var(--mono); font-size: 12px; }
 .form-hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+/* SSH key file upload */
+.ssh-key-upload { display: flex; align-items: center; gap: 10px; }
+.file-input-hidden { display: none; }
+.file-upload-btn { cursor: pointer; }
+.file-name { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
 .required { color: var(--danger); }
 .form-row { display: flex; gap: 12px; }
 .form-row .form-group { flex: 1; }

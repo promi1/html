@@ -79,13 +79,15 @@ async def handle_subscription(request: web.Request) -> web.Response:
     body = "\n".join(links)
     encoded = base64.b64encode(body.encode()).decode()
 
-    # Calculate traffic header (placeholder - real stats would come from Xray API)
-    days_left = (expires - datetime.utcnow()).days
-    total_bytes = 100 * 1024 * 1024 * 1024  # 100GB limit placeholder
+    # Get real traffic stats from database
+    from database import get_traffic
+    traffic = await get_traffic(sub["user_id"])
+    upload_bytes = traffic.get("upload", 0)
+    download_bytes = traffic.get("download", 0)
 
     headers = {
         "Content-Type": "text/plain; charset=utf-8",
-        "Subscription-Userinfo": f"upload=0; download=0; total={total_bytes}; expire={int(expires.timestamp())}",
+        "Subscription-Userinfo": f"upload={upload_bytes}; download={download_bytes}; total=0; expire={int(expires.timestamp())}",
         "Content-Disposition": f'attachment; filename="vpn_sub"',
         "Profile-Update-Interval": "12",
         "Profile-Title": "Premium VPN",
