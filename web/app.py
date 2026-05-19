@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+HELP_DIR = os.path.join(PROJECT_ROOT, "help")
+LEGAL_DIR = os.path.join(PROJECT_ROOT, "legal")
 
 # Simple session store
 sessions = {}
@@ -345,5 +348,11 @@ def create_web_app() -> web.Application:
     # Static files
     if os.path.exists(STATIC_DIR):
         app.router.add_static("/static", STATIC_DIR, name="static")
+
+    # Help / tutorial pages (static files)
+    if os.path.exists(HELP_DIR):
+        app.router.add_static("/help", HELP_DIR, name="help")
+    if os.path.exists(LEGAL_DIR):
+        app.router.add_static("/legal", LEGAL_DIR, name="legal")
 
     return app

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Подключение VPN на Windows</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="container">
+    <div class="logo"><a href="/help/">Shield<span>VPN</span></a></div>
+    <div class="breadcrumb"><a href="/help/">Инструкции</a> / Windows</div>
+
+    <h1>Подключение на Windows</h1>
+    <p class="subtitle">Настройка VLESS-подключения через приложение Happ на Windows</p>
+
+    <div class="platforms">
+        <a href="ios.html">&#127823; iOS</a>
+        <a href="android.html">&#129302; Android</a>
+        <a class="active" href="windows.html">&#128187; Windows</a>
+        <a href="macos.html">&#127822; macOS</a>
+        <a href="linux.html">&#128039; Linux</a>
+    </div>
+
+    <div style="margin-top:28px;counter-reset:step">
+        <div class="step">
+            <h3>Скачайте Happ для Windows</h3>
+            <p>Загрузите установочный файл с официального сайта и запустите установку. Приложение не требует дополнительных настроек при установке.</p>
+            <a class="app-link" href="https://github.com/nicpottier/happ/releases" target="_blank">Скачать Happ</a>
+        </div>
+
+        <div class="step">
+            <h3>Скопируйте ключ подписки</h3>
+            <p>Перейдите в Telegram-бот, откройте раздел с подпиской и нажмите на ваш ключ доступа. Ключ скопируется в буфер обмена. Он начинается с <code>vless://</code></p>
+        </div>
+
+        <div class="step">
+            <h3>Вставьте конфигурацию</h3>
+            <p>Откройте Happ, в главном окне вставьте скопированный ключ в поле ввода и нажмите <code>Поехали</code>. Программа автоматически распознает параметры подключения.</p>
+        </div>
+
+        <div class="step">
+            <h3>Подключитесь к серверу</h3>
+            <p>Выберите сервер из списка локаций и нажмите кнопку подключения. Windows может запросить разрешение на сетевой доступ — разрешите его.</p>
+        </div>
+    </div>
+
+    <div class="done-box">
+        <h3>Готово!</h3>
+        <p>VPN-туннель установлен. Весь трафик вашего компьютера теперь проходит через защищённый канал.</p>
+    </div>
+
+    <div class="note">
+        <strong>Альтернатива:</strong> Для Windows также подходит <a href="https://github.com/2dust/v2rayN/releases" target="_blank">v2rayN</a> — популярный клиент с графическим интерфейсом. Импортируйте ключ через меню: <code>Серверы &rarr; Импорт из буфера</code>.
+    </div>
+
+    <a class="back-link" href="/help/">&larr; Все инструкции</a>
+
+    <footer>
+        <a href="/legal/terms.html" style="color:#666">Условия использования</a> &nbsp;|&nbsp;
+        <a href="/legal/privacy.html" style="color:#666">Политика конфиденциальности</a>
+    </footer>
+</div>
+</body>
+</html>

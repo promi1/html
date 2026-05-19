@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Подключение VPN на Linux</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="container">
+    <div class="logo"><a href="/help/">Shield<span>VPN</span></a></div>
+    <div class="breadcrumb"><a href="/help/">Инструкции</a> / Linux</div>
+
+    <h1>Подключение на Linux</h1>
+    <p class="subtitle">Настройка VLESS-подключения через Happ или терминал на Linux</p>
+
+    <div class="platforms">
+        <a href="ios.html">&#127823; iOS</a>
+        <a href="android.html">&#129302; Android</a>
+        <a href="windows.html">&#128187; Windows</a>
+        <a href="macos.html">&#127822; macOS</a>
+        <a class="active" href="linux.html">&#128039; Linux</a>
+    </div>
+
+    <div style="margin-top:28px;counter-reset:step">
+        <div class="step">
+            <h3>Установите Happ</h3>
+            <p>Загрузите AppImage или deb-пакет Happ с официальной страницы релизов. Для AppImage: сделайте файл исполняемым (<code>chmod +x</code>) и запустите.</p>
+            <a class="app-link" href="https://github.com/nicpottier/happ/releases" target="_blank">Скачать Happ</a>
+        </div>
+
+        <div class="step">
+            <h3>Скопируйте ключ подписки</h3>
+            <p>В Telegram-боте нажмите на ключ доступа. Он скопируется автоматически. Если используете Telegram в браузере — выделите ссылку вручную и скопируйте (<code>Ctrl+C</code>).</p>
+        </div>
+
+        <div class="step">
+            <h3>Импортируйте конфигурацию</h3>
+            <p>Вставьте ключ в поле ввода Happ и нажмите <code>Поехали</code>. Приложение определит параметры сервера автоматически.</p>
+        </div>
+
+        <div class="step">
+            <h3>Запустите подключение</h3>
+            <p>Выберите локацию из списка и нажмите кнопку подключения. Система может запросить пароль root для создания tun-интерфейса.</p>
+        </div>
+    </div>
+
+    <div class="done-box">
+        <h3>Готово!</h3>
+        <p>Трафик вашей системы проходит через зашифрованный VPN-туннель.</p>
+    </div>
+
+    <div class="note">
+        <strong>Для продвинутых:</strong> Если вы предпочитаете терминал, можно использовать <a href="https://github.com/XTLS/Xray-core/releases" target="_blank">Xray-core</a> напрямую. Создайте config.json с параметрами из ключа и запустите: <code>xray run -c config.json</code>. Затем настройте системный прокси на <code>socks5://127.0.0.1:10808</code>.
+    </div>
+
+    <a class="back-link" href="/help/">&larr; Все инструкции</a>
+
+    <footer>
+        <a href="/legal/terms.html" style="color:#666">Условия использования</a> &nbsp;|&nbsp;
+        <a href="/legal/privacy.html" style="color:#666">Политика конфиденциальности</a>
+    </footer>
+</div>
+</body>
+</html>

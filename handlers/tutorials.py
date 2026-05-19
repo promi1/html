@@ -78,9 +78,14 @@ def tutorials_kb() -> InlineKeyboardMarkup:
         buttons.append([InlineKeyboardButton(
             text=f"{t['icon']} {t['name']}", callback_data=f"tut:{key}"
         )])
+    web_base = f"http://{config.WEBHOOK_BASE_URL}" if config.WEBHOOK_BASE_URL else ""
     if config.TUTORIAL_URL:
         buttons.append([InlineKeyboardButton(
             text=f"{INFO} Подробный гайд", url=config.TUTORIAL_URL
+        )])
+    elif web_base:
+        buttons.append([InlineKeyboardButton(
+            text=f"{INFO} Все инструкции на сайте", url=f"{web_base}/help/"
         )])
     buttons.append([InlineKeyboardButton(text="\u25c0\ufe0f Назад", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
