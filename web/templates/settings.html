@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set active = "settings" %}
+
+{% block title %}Настройки — VPN Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>⚙️ Настройки</h1>
+</div>
+
+<div class="settings-grid">
+    <div class="info-card">
+        <h3>💎 Подписка</h3>
+        <div class="setting-row">
+            <span>Цена:</span>
+            <strong>{{ price }} ₽ / месяц</strong>
+        </div>
+        <div class="setting-row">
+            <span>Протокол:</span>
+            <strong>VLESS + XTLS-Reality</strong>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h3>📢 Канал</h3>
+        <div class="setting-row">
+            <span>Обязательная подписка:</span>
+            <strong>{{ channel if channel else 'Не настроен' }}</strong>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h3>💳 Платёжные системы</h3>
+        <div class="setting-row">
+            <span>CryptoBot:</span>
+            {% if cryptopay %}
+            <span class="badge badge-ok">✅ Настроен</span>
+            {% else %}
+            <span class="badge badge-err">❌ Не настроен</span>
+            {% endif %}
+        </div>
+        <div class="setting-row">
+            <span>Lolz.live:</span>
+            {% if lolz %}
+            <span class="badge badge-ok">✅ Настроен</span>
+            {% else %}
+            <span class="badge badge-err">❌ Не настроен</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h3>📝 Как настроить</h3>
+        <p>Настройки находятся в файле <code>/opt/vpnbot/.env</code></p>
+        <p>После изменений перезапустите бот:</p>
+        <code>systemctl restart vpnbot</code>
+    </div>
+</div>
+{% endblock %}

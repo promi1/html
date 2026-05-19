@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% set active = "users" %}
+
+{% block title %}Пользователи — VPN Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>👥 Пользователи</h1>
+</div>
+
+{% if users %}
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Telegram ID</th>
+                <th>Имя</th>
+                <th>Username</th>
+                <th>Баланс</th>
+                <th>Подписка</th>
+                <th>Дата регистрации</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td><code>{{ u.user_id }}</code></td>
+                <td>{{ u.first_name or '—' }}</td>
+                <td>{{ ('@' + u.username) if u.username else '—' }}</td>
+                <td>{{ "%.0f"|format(u.balance) }} ₽</td>
+                <td>
+                    {% if u.has_sub %}
+                    <span class="badge badge-ok">✅ до {{ u.sub_expires }}</span>
+                    {% else %}
+                    <span class="badge badge-err">Нет</span>
+                    {% endif %}
+                </td>
+                <td>{{ u.created_at[:16] if u.created_at else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">👥</div>
+    <h3>Нет пользователей</h3>
+    <p>Пользователи появятся когда начнут использовать бот</p>
+</div>
+{% endif %}
+{% endblock %}
