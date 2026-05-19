@@ -1,3 +1,4 @@
+import asyncio
 import csv
 import io
 import json
@@ -12,7 +13,8 @@ from database import (get_all_servers, get_server, get_all_users, get_user_count
                        get_active_sub_count, get_total_revenue, get_all_subscriptions,
                        add_server, delete_server, toggle_server, update_server_xray,
                        get_user, add_balance, search_users, get_user_total_payments,
-                       get_all_users_with_payments, get_all_traffic, ensure_traffic_table)
+                       get_all_users_with_payments, get_all_traffic, ensure_traffic_table,
+                       get_users_registered_since, get_subs_started_since, get_revenue_since)
 from services.country import detect_country
 from services.xray_manager import setup_server_full, setup_relay, check_server_alive
 from emoji import flag
@@ -71,6 +73,25 @@ async def dashboard(request):
     revenue = await get_total_revenue()
     servers = await get_all_servers()
     active_servers = [s for s in servers if s["is_active"]]
+
+    now = datetime.utcnow()
+    week_ago = (now - timedelta(days=7)).isoformat()
+    two_weeks_ago = (now - timedelta(days=14)).isoformat()
+    month_ago = (now - timedelta(days=30)).isoformat()
+    two_months_ago = (now - timedelta(days=60)).isoformat()
+
+    users_this_week = await get_users_registered_since(week_ago)
+    users_prev_week = await get_users_registered_since(two_weeks_ago) - users_this_week
+    subs_this_week = await get_subs_started_since(week_ago)
+    subs_prev_week = await get_subs_started_since(two_weeks_ago) - subs_this_week
+    rev_this_month = await get_revenue_since(month_ago)
+    rev_prev_month = await get_revenue_since(two_months_ago) - rev_this_month
+
+    def calc_delta(current, previous):
+        if previous > 0:
+            return round((current - previous) / previous * 100)
+        return 100 if current > 0 else 0
+
     return {
         "users": users,
         "subs": subs,
@@ -78,6 +99,11 @@ async def dashboard(request):
         "servers": len(servers),
         "active_servers": len(active_servers),
         "price": config.PRICE_RUB,
+        "delta_users": calc_delta(users_this_week, users_prev_week),
+        "delta_subs": calc_delta(subs_this_week, subs_prev_week),
+        "delta_revenue": calc_delta(rev_this_month, rev_prev_month),
+        "users_this_week": users_this_week,
+        "subs_this_week": subs_this_week,
     }
 
 
@@ -275,6 +301,21 @@ async def add_balance_handler(request):
     amount = float(data.get("amount", 0))
     if user_id and amount:
         await add_balance(user_id, amount)
+        # Send Telegram notification to user
+        try:
+            bot = request.app.get("bot")
+            if bot:
+                user = await get_user(user_id)
+                new_balance = user["balance"] if user else amount
+                await bot.send_message(
+                    user_id,
+                    f"<b>Баланс пополнен!</b>\n\n"
+                    f"Сумма: <b>+{amount:.0f} \u20bd</b>\n"
+                    f"Текущий баланс: <b>{new_balance:.0f} \u20bd</b>",
+                    parse_mode="HTML"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to send balance notification to {user_id}: {e}")
     raise web.HTTPFound(f"/admin/users?q={user_id}")
 
 
@@ -370,6 +411,36 @@ async def api_subs(request):
     return web.json_response({"labels": labels, "values": values})
 
 
+async def api_check_server(request):
+    if not check_auth(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    server_id = int(request.match_info["id"])
+    s = await get_server(server_id)
+    if not s:
+        return web.json_response({"status": "error", "reason": "Server not found"})
+    try:
+        from services.xray_manager import run_ssh_command
+        # Check SSH connectivity
+        stdout, stderr, rc = await run_ssh_command(
+            s["ip"], s["ssh_user"], s["ssh_password"],
+            "echo ok && systemctl is-active xray 2>/dev/null || echo inactive",
+            s["ssh_port"], timeout=15, ssh_key=s.get("ssh_key", "")
+        )
+        if rc != 0 or "ok" not in stdout:
+            reason = stderr.strip() if stderr.strip() else "SSH connection failed"
+            return web.json_response({"status": "error", "reason": reason})
+        lines = stdout.strip().split("\n")
+        xray_status = lines[-1].strip() if len(lines) > 1 else "unknown"
+        if xray_status == "active":
+            return web.json_response({"status": "ok", "detail": "SSH OK, Xray running"})
+        else:
+            return web.json_response({"status": "warning", "detail": f"SSH OK, Xray: {xray_status}"})
+    except asyncio.TimeoutError:
+        return web.json_response({"status": "error", "reason": "SSH connection timed out"})
+    except Exception as e:
+        return web.json_response({"status": "error", "reason": str(e)})
+
+
 def create_web_app() -> web.Application:
     app = web.Application()
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(TEMPLATES_DIR))
@@ -394,6 +465,7 @@ def create_web_app() -> web.Application:
     # API endpoints for dashboard charts
     app.router.add_get("/admin/api/revenue", api_revenue)
     app.router.add_get("/admin/api/subs", api_subs)
+    app.router.add_get("/admin/api/servers/check/{id}", api_check_server)
 
     # Static files
     if os.path.exists(STATIC_DIR):

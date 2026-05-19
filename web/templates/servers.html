@@ -84,6 +84,9 @@
                             {{ icon('power', 16) }}
                         </a>
                         {% endif %}
+                        <button class="btn-icon" title="Check server" onclick="checkServer({{ s.id }}, this)">
+                            {{ icon('activity', 16) }}
+                        </button>
                         {% if not s.xray_configured and not s.is_relay %}
                         <a href="/admin/servers/reinstall/{{ s.id }}" class="btn-icon btn-icon-accent" title="Install Xray">
                             {{ icon('rotate-cw', 16) }}
@@ -109,4 +112,49 @@
     </a>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function checkServer(id, btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.title = 'Checking...';
+    fetch('/admin/api/servers/check/' + id)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            if (data.status === 'ok') {
+                btn.title = data.detail;
+                btn.classList.add('btn-icon-success');
+                alert('OK: ' + data.detail);
+            } else if (data.status === 'warning') {
+                btn.title = data.detail;
+                btn.classList.add('btn-icon-accent');
+                alert('Warning: ' + data.detail);
+            } else {
+                btn.title = data.reason;
+                btn.classList.add('btn-icon-danger');
+                alert('Error: ' + data.reason);
+            }
+            setTimeout(function() {
+                btn.classList.remove('btn-icon-success', 'btn-icon-accent', 'btn-icon-danger');
+                btn.title = 'Check server';
+            }, 5000);
+        })
+        .catch(function(e) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            alert('Request failed: ' + e.message);
+        });
+}
+
+function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(function() {
+        btn.title = 'Copied!';
+        setTimeout(function() { btn.title = 'Copy'; }, 2000);
+    });
+}
+</script>
 {% endblock %}

@@ -17,10 +17,12 @@
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-icon">{{ icon('users', 20) }}</span>
-            <span class="kpi-delta up">{{ icon('trending-up', 14) }} +{{ delta_users|default('12') }}%</span>
+            {% if delta_users is defined %}
+            <span class="kpi-delta {% if delta_users >= 0 %}up{% else %}down{% endif %}">{{ icon('trending-up' if delta_users >= 0 else 'trending-down', 14) }} {{ '%+d' % delta_users }}%</span>
+            {% endif %}
         </div>
         <div class="kpi-value">{{ users }}</div>
-        <div class="kpi-label">Total Users</div>
+        <div class="kpi-label">Total Users{% if users_this_week is defined %} <small style="opacity:.5">(+{{ users_this_week }} this week)</small>{% endif %}</div>
         <div class="kpi-sparkline">
             <svg viewBox="0 0 120 32" preserveAspectRatio="none">
                 <polyline fill="none" stroke="var(--accent)" stroke-width="1.5"
@@ -38,10 +40,12 @@
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-icon">{{ icon('credit-card', 20) }}</span>
-            <span class="kpi-delta up">{{ icon('trending-up', 14) }} +{{ delta_subs|default('8') }}%</span>
+            {% if delta_subs is defined %}
+            <span class="kpi-delta {% if delta_subs >= 0 %}up{% else %}down{% endif %}">{{ icon('trending-up' if delta_subs >= 0 else 'trending-down', 14) }} {{ '%+d' % delta_subs }}%</span>
+            {% endif %}
         </div>
         <div class="kpi-value">{{ subs }}</div>
-        <div class="kpi-label">Active Subscriptions</div>
+        <div class="kpi-label">Active Subscriptions{% if subs_this_week is defined %} <small style="opacity:.5">(+{{ subs_this_week }} this week)</small>{% endif %}</div>
         <div class="kpi-sparkline">
             <svg viewBox="0 0 120 32" preserveAspectRatio="none">
                 <polyline fill="none" stroke="var(--success)" stroke-width="1.5"
@@ -59,7 +63,9 @@
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-icon">{{ icon('dollar-sign', 20) }}</span>
-            <span class="kpi-delta up">{{ icon('trending-up', 14) }} +{{ delta_revenue|default('15') }}%</span>
+            {% if delta_revenue is defined %}
+            <span class="kpi-delta {% if delta_revenue >= 0 %}up{% else %}down{% endif %}">{{ icon('trending-up' if delta_revenue >= 0 else 'trending-down', 14) }} {{ '%+d' % delta_revenue }}%</span>
+            {% endif %}
         </div>
         <div class="kpi-value">{{ revenue|default('0') }}<span class="kpi-currency">&#8381;</span></div>
         <div class="kpi-label">Revenue (30d)</div>

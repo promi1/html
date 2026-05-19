@@ -423,6 +423,36 @@ async def get_all_traffic():
             return {r["user_id"]: dict(r) for r in rows}
 
 
+# ─── KPI deltas ─────────────────────────────────────────────────────────
+
+async def get_users_registered_since(since_iso: str) -> int:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT COUNT(*) FROM users WHERE created_at >= ?", (since_iso,)
+        ) as cur:
+            row = await cur.fetchone()
+            return row[0]
+
+
+async def get_subs_started_since(since_iso: str) -> int:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT COUNT(*) FROM subscriptions WHERE started_at >= ?", (since_iso,)
+        ) as cur:
+            row = await cur.fetchone()
+            return row[0]
+
+
+async def get_revenue_since(since_iso: str) -> float:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'paid' AND created_at >= ?",
+            (since_iso,)
+        ) as cur:
+            row = await cur.fetchone()
+            return row[0]
+
+
 # ─── Settings ────────────────────────────────────────────────────────────
 
 async def get_setting(key: str, default: str = "") -> str:
